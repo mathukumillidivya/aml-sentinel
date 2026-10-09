@@ -1,0 +1,13 @@
+{
+  "alerts": 6739,
+  "true_alerts": 242,
+  "seconds_per_alert_all_tools": 0.0583,
+  "auc_of_crude_score": 0.8093,
+  "alerts_with_any_red_flag": 2200,
+  "true_alerts_with_any_red_flag": 199,
+  "true_alerts_with_no_red_flag": 43,
+  "false_alarms_with_no_red_flag": 4496,
+  "false_alarms_total": 6497,
+  "share_of_false_alarms_with_no_red_flag": 0.692,
+  "share_of_true_alerts_with_red_flag": 0.8223
+}

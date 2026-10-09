@@ -1,0 +1,5 @@
+data/transactions.csv
+__pycache__/
+*.pyc
+.env
+.pytest_cache/

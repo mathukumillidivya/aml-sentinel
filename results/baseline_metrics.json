@@ -1,0 +1,69 @@
+{
+  "transactions": 160457,
+  "laundering_transactions": 656,
+  "alerts": 6739,
+  "true_alerts": 242,
+  "false_alerts": 6497,
+  "precision": 0.0359,
+  "false_positive_share": 0.9641,
+  "false_alerts_per_true_alert": 26.8,
+  "laundering_accounts": 463,
+  "laundering_accounts_alerted": 160,
+  "account_recall": 0.3456,
+  "patterns": 60,
+  "patterns_caught": 56,
+  "pattern_recall": 0.9333,
+  "by_pattern_type": {
+    "cycle": {
+      "patterns": 10,
+      "caught": 10
+    },
+    "fan_in": {
+      "patterns": 10,
+      "caught": 9
+    },
+    "fan_out": {
+      "patterns": 10,
+      "caught": 10
+    },
+    "low_and_slow": {
+      "patterns": 10,
+      "caught": 7
+    },
+    "scatter_gather": {
+      "patterns": 10,
+      "caught": 10
+    },
+    "structuring": {
+      "patterns": 10,
+      "caught": 10
+    }
+  },
+  "by_rule": {
+    "R1_LARGE_TXN": {
+      "alerts": 3756,
+      "true_alerts": 99,
+      "precision": 0.0264
+    },
+    "R2_STRUCTURING": {
+      "alerts": 28,
+      "true_alerts": 27,
+      "precision": 0.9643
+    },
+    "R3_FAN_OUT": {
+      "alerts": 1306,
+      "true_alerts": 23,
+      "precision": 0.0176
+    },
+    "R4_FAN_IN": {
+      "alerts": 731,
+      "true_alerts": 23,
+      "precision": 0.0315
+    },
+    "R5_RAPID_MOVEMENT": {
+      "alerts": 1869,
+      "true_alerts": 116,
+      "precision": 0.0621
+    }
+  }
+}
