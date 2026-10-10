@@ -144,3 +144,11 @@ def test_network_trace_finds_hub_and_siblings_from_a_minor_recipient():
     rows += [("2026-02-09 10:00", "HUB", f"M{i}", 7000, "wire") for i in range(8)]
     r = tools.trace_network(make(rows), "M3", ALERT)
     assert "HUB" in r["linked_accounts"] and {"M0", "M7"} <= set(r["linked_accounts"])
+
+
+def test_burst_spanning_midnight_still_links_every_recipient():
+    rows = [("2026-01-10 10:00", "HUB", "SHOP", 1200, "card")]
+    rows += [("2026-02-08 22:00", "HUB", f"M{i}", 7000, "wire") for i in range(6)]
+    rows += [("2026-02-09 02:00", "HUB", f"N{i}", 7000, "wire") for i in range(3)]   # the smaller half
+    r = tools.trace_network(make(rows), "N1", ALERT)
+    assert "HUB" in r["linked_accounts"] and {"M0", "N2"} <= set(r["linked_accounts"])

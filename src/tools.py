@@ -88,7 +88,12 @@ def _burst(ledger: Ledger, account: str, start, end, direction: str) -> set:
     if len(cps - set(h.counterparty)) / len(cps) < 0.7:
         return set()
     prior = h.groupby(h.timestamp.dt.normalize()).counterparty.nunique()
-    return set() if (prior >= max(3, 0.6 * len(cps))).any() else set(cps)
+    if (prior >= max(3, 0.6 * len(cps))).any():
+        return set()
+    # a burst often straddles midnight: include new counterparties on the adjacent days too
+    peak = max(per_day.index, key=lambda d: len(per_day[d]))
+    near = [d for d in per_day.index if abs((d - peak).days) <= 1]
+    return set().union(*(per_day[d] for d in near)) - set(h.counterparty)
 
 
 def get_account_profile(ledger: Ledger, account: str, as_of: str, lookback_days: int = 7) -> dict:

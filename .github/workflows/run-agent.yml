@@ -16,6 +16,9 @@ on:
       seed:
         description: Sample seed (11 = development set; use another for a held-out test)
         default: "11"
+      exclude_runs:
+        description: Earlier run ids to keep out of this sample (comma-separated)
+        default: ""
       token_budget:
         description: Stop after this many tokens
         default: "3000000"
@@ -34,6 +37,7 @@ jobs:
       N: ${{ inputs.n }}
       TOKEN_BUDGET: ${{ inputs.token_budget }}
       SEED: ${{ inputs.seed }}
+      EXCLUDE: ${{ inputs.exclude_runs }}
       RUN_ID: ${{ inputs.provider }}-run${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +48,7 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m pytest -q tests
       - name: Investigate alerts
-        run: python src/run_agent.py --provider "$PROVIDER" --model "$MODEL" --n "$N" --seed "$SEED" --token-budget "$TOKEN_BUDGET" --run-id "$RUN_ID"
+        run: python src/run_agent.py --provider "$PROVIDER" --model "$MODEL" --n "$N" --seed "$SEED" --exclude-runs "$EXCLUDE" --token-budget "$TOKEN_BUDGET" --run-id "$RUN_ID"
       - name: Score against ground truth
         run: python src/evaluate_agent.py --run "$RUN_ID"
       - name: Save results to the repository
