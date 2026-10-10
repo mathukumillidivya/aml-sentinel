@@ -1,0 +1,14 @@
+{
+  "run_id": "ibm-dev2",
+  "provider": "anthropic",
+  "model": "claude-haiku-4-5-20251001",
+  "split": "dev",
+  "seed": 29,
+  "requested": 80,
+  "completed": 80,
+  "skipped_for_budget": 0,
+  "band_alerts": 6724,
+  "band_true_alerts": 821,
+  "escalate_at": 25,
+  "wall_seconds": 398.6
+}

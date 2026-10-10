@@ -1,0 +1,152 @@
+{
+  "sample": {
+    "alerts": 80,
+    "true_alerts": 30,
+    "false_alarms": 50
+  },
+  "band": {
+    "alerts": 6724,
+    "true_alerts": 821,
+    "precision": 0.1221
+  },
+  "ranking": {
+    "model": {
+      "auc": 0.84,
+      "average_precision": 0.619,
+      "review_share_to_keep_80pct": 0.361,
+      "review_share_to_keep_90pct": 0.4962
+    },
+    "agent": {
+      "auc": 0.8017,
+      "average_precision": 0.5514,
+      "review_share_to_keep_80pct": 0.2733,
+      "review_share_to_keep_90pct": 0.2855
+    },
+    "combined": {
+      "auc": 0.8647,
+      "average_precision": 0.7329,
+      "review_share_to_keep_80pct": 0.3435,
+      "review_share_to_keep_90pct": 0.4962
+    }
+  },
+  "agent_vs_model": {
+    "auc_gap": -0.0383,
+    "ci95": [
+      -0.1373,
+      0.0677
+    ],
+    "significant": false
+  },
+  "combined_vs_model": {
+    "auc_gap": 0.0251,
+    "ci95": [
+      -0.0327,
+      0.0913
+    ],
+    "significant": false
+  },
+  "agent_decision": {
+    "escalate_at": 25,
+    "true_alerts_escalated": {
+      "count": 12,
+      "of": 30,
+      "rate": 0.4,
+      "ci95": [
+        0.2459,
+        0.5768
+      ]
+    },
+    "false_alarms_dismissed": {
+      "count": 50,
+      "of": 50,
+      "rate": 1.0,
+      "ci95": [
+        0.9286,
+        1
+      ]
+    },
+    "alerts_for_human_review": 328,
+    "share_of_band": 0.0488,
+    "precision": 1.0
+  },
+  "model_at_same_retention": {
+    "true_alerts_kept": 0.4,
+    "share_of_band": 0.0488
+  },
+  "network": {
+    "agent": {
+      "accounts_named_correct": {
+        "count": 36,
+        "of": 43,
+        "rate": 0.8372,
+        "ci95": [
+          0.7003,
+          0.9188
+        ]
+      },
+      "scheme_members_found": {
+        "count": 36,
+        "of": 291,
+        "rate": 0.1237,
+        "ci95": [
+          0.0907,
+          0.1665
+        ]
+      }
+    },
+    "trace_tool_unfiltered": {
+      "accounts_named_correct": {
+        "count": 51,
+        "of": 64,
+        "rate": 0.7969,
+        "ci95": [
+          0.6829,
+          0.8773
+        ]
+      },
+      "scheme_members_found": {
+        "count": 51,
+        "of": 291,
+        "rate": 0.1753,
+        "ci95": [
+          0.1359,
+          0.2231
+        ]
+      }
+    },
+    "invented_accounts_blocked": 0
+  },
+  "operations": {
+    "failsafe_escalations": {
+      "count": 0,
+      "of": 80,
+      "rate": 0.0,
+      "ci95": [
+        0,
+        0.0458
+      ]
+    },
+    "failure_reasons": {},
+    "avg_tool_calls": 3.42,
+    "avg_turns": 2.81,
+    "avg_seconds": 17.11,
+    "avg_input_tokens": 11855,
+    "avg_output_tokens": 1487,
+    "total_input_tokens": 948400,
+    "total_output_tokens": 118974
+  },
+  "run": {
+    "run_id": "ibm-dev2",
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5-20251001",
+    "split": "dev",
+    "seed": 29,
+    "requested": 80,
+    "completed": 80,
+    "skipped_for_budget": 0,
+    "band_alerts": 6724,
+    "band_true_alerts": 821,
+    "escalate_at": 25,
+    "wall_seconds": 398.6
+  }
+}
