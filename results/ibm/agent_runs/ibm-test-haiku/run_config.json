@@ -1,0 +1,14 @@
+{
+  "run_id": "ibm-test-haiku",
+  "provider": "anthropic",
+  "model": "claude-haiku-4-5-20251001",
+  "split": "test",
+  "seed": 101,
+  "requested": 300,
+  "completed": 300,
+  "skipped_for_budget": 0,
+  "band_alerts": 9249,
+  "band_true_alerts": 1275,
+  "escalate_at": 15,
+  "wall_seconds": 1640.5
+}
