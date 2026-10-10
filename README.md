@@ -3,9 +3,9 @@
 An AI agent that does the first-pass investigation of anti-money-laundering (AML)
 alerts, so human investigators spend their time on the cases that matter.
 
-**Status: step 4 of 7** (sample data, rule-based baseline, investigation tools,
-triage agent). The agent runs end to end on a live model. Results so far are
-small development runs, not final measurements.
+**Status: step 4 of 7 complete** (sample data, rule-based baseline, investigation
+tools, triage agent with a held-out result on sample data). Not yet measured on
+the public IBM dataset.
 
 ## The problem
 
@@ -66,22 +66,46 @@ Models are swappable (`src/models.py`): Claude, OpenAI, or an offline mock used
 by the tests. Evaluation uses a stratified sample re-weighted to the true alert
 mix, with 95% Wilson confidence intervals on every rate.
 
-### Development runs (Claude Haiku 4.5, sample data)
+### Results so far (Claude Haiku 4.5, synthetic sample data)
 
-| Run | Alerts | True alerts escalated | False alarms dismissed | Scheme members found |
-|---|---|---|---|---|
-| run1 | 20 | 9/10 | 2/10 | 33/44 |
-| run2 | 40 | 16/20 (95% CI 58–92%) | 18/20 (95% CI 70–97%) | 100/118 |
+Held-out test: 100 alerts the agent was never tuned on (run3), re-weighted to the
+real mix of 4,490 alerts after a 30-day warm-up.
+
+| Measure | Rules only | With agent |
+|---|---|---|
+| Alerts needing human review | 4,490 | about 1,190 (74% fewer) |
+| Precision | 3.7% | 11.5% |
+| False alarms dismissed | n/a | 38/50 (76%, 95% CI 63–86%) |
+| True alerts escalated | n/a | 41/50 (82%, 95% CI 69–90%) |
+| Other scheme members identified | n/a | 309/369 (84%, 95% CI 80–87%) |
+| Accounts named that were correct | n/a | 342/384 (89%) |
+| Fail-safe escalations | n/a | 2/100 (malformed verdicts, routed to a human) |
+| Tokens per alert (in / out) | n/a | 18,400 / 1,750 |
+
+Misses by scheme type: cycle 0/12, structuring 0/3, scatter-gather 0/6,
+fan-out 2/15, fan-in 2/8, low-and-slow 5/6. Low-and-slow stays under every
+threshold by design, and its alerts fire on unrelated activity, so neither the
+rules nor the agent has evidence to work with. That typology needs a different
+detector.
+
+Development history:
+
+| Run | Alerts | True alerts escalated | False alarms dismissed |
+|---|---|---|---|
+| run1 (dev) | 20 | 9/10 | 2/10 |
+| run2 (dev) | 40 | 16/20 | 18/20 |
+| run3 (held-out) | 100 | 41/50 | 38/50 |
 
 Run1 over-escalated: the agent treated short data history as a new account,
 ordinary counterparty turnover as a network, and normal volume swings as
-anomalies. For run2 the tools report each account's own base rate beside every
-signal, `trace_network` follows only specific suspicious links, and the first 30
-days of data are excluded as a warm-up period.
+anomalies. The tools now report each account's own base rate beside every
+signal, and `trace_network` follows only specific suspicious links. Run2's 90%
+dismissal rate fell to 76% on held-out alerts, which is the expected gap between
+a development set and a test set.
 
-Caveats: the runs are small, the fixes were made after reading run1's errors
-(so run2 is a development result and likely optimistic), and the data is
-synthetic. A held-out sample and the IBM dataset come next.
+Limits: the data is synthetic and written by the project author, the sample is
+100 alerts, and the agent trades about 18% of true alerts for the workload cut.
+Measurement on the public IBM AML dataset is the next step.
 
 ## Run it
 
@@ -90,7 +114,7 @@ pip install -r requirements.txt
 python src/generate_data.py      # writes data/transactions.csv
 python src/rules_baseline.py     # writes results/alerts.csv
 python src/evaluate.py           # writes results/baseline_metrics.json
-python -m pytest tests           # 33 tests, no API key needed
+python -m pytest tests           # 34 tests, no API key needed
 python src/tool_signal_check.py  # ~7 min; writes results/tool_signal_check.json
 
 # agent: offline dry run, then a live run
@@ -123,7 +147,7 @@ key from a repository secret.
 1. Data ✅ (sample) / IBM dataset (pending)
 2. Rule-based baseline ✅
 3. Investigation tools ✅
-4. Triage agent ✅ running on a live model / held-out measurement (pending)
+4. Triage agent ✅ (held-out result on sample data above)
 5. Investigator review screen
 6. Before/after measurement
 7. Packaging: diagram, demo, write-up
