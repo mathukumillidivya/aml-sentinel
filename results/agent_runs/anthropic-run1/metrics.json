@@ -1,0 +1,122 @@
+{
+  "sample": {
+    "alerts": 20,
+    "true_alerts": 10,
+    "false_alarms": 10
+  },
+  "true_alerts_escalated": {
+    "count": 9,
+    "of": 10,
+    "rate": 0.9,
+    "ci95": [
+      0.5958,
+      0.9821
+    ]
+  },
+  "false_alarms_dismissed": {
+    "count": 2,
+    "of": 10,
+    "rate": 0.2,
+    "ci95": [
+      0.0567,
+      0.5098
+    ]
+  },
+  "at_agent_decision": {
+    "alerts_for_human_review": 5415,
+    "of_baseline_alerts": 6739,
+    "workload_reduction": 0.1964,
+    "false_alarm_reduction": 0.2,
+    "precision": 0.0402,
+    "baseline_precision": 0.0359
+  },
+  "at_fixed_retention": {
+    "target_retention": 0.95,
+    "risk_threshold": 25,
+    "true_alerts_kept": {
+      "count": 10,
+      "of": 10,
+      "rate": 1.0,
+      "ci95": [
+        0.7225,
+        1
+      ]
+    },
+    "false_alarms_removed": {
+      "count": 1,
+      "of": 10,
+      "rate": 0.1,
+      "ci95": [
+        0.0179,
+        0.4042
+      ]
+    },
+    "alerts_for_human_review": 6089,
+    "of_baseline_alerts": 6739,
+    "workload_reduction": 0.0964,
+    "false_alarm_reduction": 0.1,
+    "precision": 0.0397,
+    "baseline_precision": 0.0359,
+    "note": "threshold chosen on the same sample; treat as optimistic"
+  },
+  "network": {
+    "linked_accounts_correct": {
+      "count": 40,
+      "of": 74,
+      "rate": 0.5405,
+      "ci95": [
+        0.4278,
+        0.6493
+      ]
+    },
+    "scheme_members_found": {
+      "count": 33,
+      "of": 44,
+      "rate": 0.75,
+      "ci95": [
+        0.6056,
+        0.8543
+      ]
+    },
+    "invented_accounts_blocked": 1
+  },
+  "typology_correct": {
+    "count": 4,
+    "of": 9,
+    "rate": 0.4444,
+    "ci95": [
+      0.1888,
+      0.7334
+    ]
+  },
+  "operations": {
+    "failsafe_escalations": {
+      "count": 0,
+      "of": 20,
+      "rate": 0.0,
+      "ci95": [
+        0,
+        0.1611
+      ]
+    },
+    "failure_reasons": {},
+    "avg_tool_calls": 6.55,
+    "avg_turns": 3.35,
+    "avg_seconds": 18.92,
+    "avg_input_tokens": 16498,
+    "avg_output_tokens": 1781,
+    "cached_input_share": 0.0
+  },
+  "run": {
+    "run_id": "anthropic-run1",
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5-20251001",
+    "requested": 20,
+    "completed": 20,
+    "skipped_for_budget": 0,
+    "sample": "stratified",
+    "seed": 11,
+    "alerts_total": 6739,
+    "wall_seconds": 111.0
+  }
+}
