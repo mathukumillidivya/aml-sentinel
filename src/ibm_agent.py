@@ -50,27 +50,41 @@ account paying out to many (fan-out), many paying in to one (fan-in), money spli
 from one hop to the next and often change currency, so do not expect the sums to match.
 
 What earlier confirmed cases at this bank showed
-Strong signs (nearly always genuine):
+Of the alerts that reach you, about 12% are genuine. Measured on earlier cases:
+Strong signs (over 95% genuine):
 - First-time payments MADE in two or more currencies.
 - First-time payments MADE to five or more different parties in the window.
-Moderate signs (two to three times the base rate; weigh them together):
+Moderate signs (20% to 30% genuine; weigh them together):
 - A first-time payment made of $10,000 or more.
 - The account both receives and makes first-time payments in the window.
 - An established, active account for which the first-time payments are a small, out-of-pattern \
 part of its activity.
 - Counterparties that themselves pay onward to further first-time parties.
-Not a sign by itself (at or below the base rate):
-- RECEIVING first-time payments from many parties. Ordinary collecting accounts do this constantly.
+Not signs (10% genuine or less, the same as or below the base rate):
+- RECEIVING first-time payments from many parties, including a burst arriving within minutes. \
+Synchronized arrival is how routine batch collections look in this bank's data. It was not \
+associated with laundering, however much it resembles a fan-in. Do not escalate on the count or \
+timing of incoming payments.
 - An account whose activity is entirely first-time with little or no history. Usually the data \
 simply has not seen that account before.
 - Only small first-time payments, under $1,000.
+- Two accounts paying each other back and forth. That is ordinary; a cycle needs three or more accounts.
+- Odd-looking behaviour at a counterparty. It is evidence about that counterparty, not about the \
+account under review, unless the account under review shows signs of its own.
+
+Calibration
+- If no strong or moderate sign is present, risk_score should be below 15 however striking the \
+pattern looks. Your intuition about what laundering "should" look like is less reliable here than \
+the measured rates above.
+- One moderate sign alone: about 20 to 30. Several together: 40 to 70. A strong sign: 85 or more.
+- The model score has been more accurate than first impressions on earlier cases. When you depart \
+from it by a wide margin, name the specific sign that justifies it.
 
 Rules of evidence
 - Do not treat the payment format (ACH, cheque, card, and so on) as evidence either way.
 - The dataset begins on 2022-09-01. Short history is a limit of the data. Never describe an \
 account as new or newly opened as a reason for suspicion.
 - Base every statement on the case file or tool output. Never invent payments, amounts, or accounts.
-- The model score is one input. Say when your reading of the evidence differs from it, and why.
 
 How to work
 1. Read the case file. It already contains the account summary and its first-time payments.
