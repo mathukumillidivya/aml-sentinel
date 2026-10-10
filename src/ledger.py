@@ -5,6 +5,8 @@ The ground-truth label columns are dropped on load, so nothing downstream
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 
 LABEL_COLUMNS = ["is_laundering", "pattern_id", "pattern_type"]
@@ -25,6 +27,8 @@ class Ledger:
 
     @classmethod
     def from_csv(cls, tx_path="data/transactions.csv", accounts_path="data/accounts.csv"):
+        if not Path(tx_path).exists() and Path(tx_path + ".gz").exists():
+            tx_path += ".gz"   # the repository ships the compressed copy
         tx = pd.read_csv(tx_path, parse_dates=["timestamp"], keep_default_na=False)
         try:
             acc = pd.read_csv(accounts_path)

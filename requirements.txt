@@ -1,3 +1,5 @@
-pandas
-numpy
+pandas==3.0.5
+numpy==2.5.3
 pytest
+anthropic>=1.13
+openai>=3.28

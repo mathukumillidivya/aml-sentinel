@@ -3,8 +3,9 @@
 An AI agent that does the first-pass investigation of anti-money-laundering (AML)
 alerts, so human investigators spend their time on the cases that matter.
 
-**Status: step 3 of 7 complete** (sample data, rule-based baseline, investigation
-tools). The agent itself is not built yet.
+**Status: step 4 of 7 built** (sample data, rule-based baseline, investigation
+tools, triage agent). The agent is tested offline and has not yet been measured
+with a live model.
 
 ## The problem
 
@@ -46,6 +47,25 @@ Signal check on the sample alerts, using a hand-written score and no model:
 69% of false alarms show no red flag, 82% of true alerts show at least one,
 AUC 0.81. This is a sanity check on self-authored data, not a result.
 
+## The agent
+
+`src/agent.py` runs a tool-use loop: the model reads the alert, picks tools,
+reads the evidence, and submits a structured verdict (disposition, risk score,
+typology, evidence, innocent explanation considered, linked accounts, narrative).
+A human investigator makes the final call.
+
+| Property | Guarantee |
+|---|---|
+| Fail-safe | Any error, timeout, or missing verdict escalates to a human |
+| Bounded | Max 8 model turns and 16 tool calls per alert; token budget per run |
+| Grounded | Accounts named in a verdict must appear in tool output |
+| Auditable | Full trace of tool calls, results, and reasoning per alert |
+| Blind | Ground-truth labels never reach the tools or the model |
+
+Models are swappable (`src/models.py`): Claude, OpenAI, or an offline mock used
+by the tests. Evaluation uses a stratified sample re-weighted to the true alert
+mix, with 95% Wilson confidence intervals on every rate.
+
 ## Run it
 
 ```bash
@@ -53,9 +73,18 @@ pip install -r requirements.txt
 python src/generate_data.py      # writes data/transactions.csv
 python src/rules_baseline.py     # writes results/alerts.csv
 python src/evaluate.py           # writes results/baseline_metrics.json
-python -m pytest tests           # 14 tool tests
+python -m pytest tests           # 28 tests, no API key needed
 python src/tool_signal_check.py  # ~7 min; writes results/tool_signal_check.json
+
+# agent: offline dry run, then a live run
+python src/run_agent.py --provider mock --n 40
+export ANTHROPIC_API_KEY=...     # never commit this
+python src/run_agent.py --provider anthropic --n 20
+python src/evaluate_agent.py --run <run_id>
 ```
+
+Or use the **Run triage agent** workflow under the Actions tab, which reads the
+key from a repository secret.
 
 ## Layout
 
@@ -64,6 +93,10 @@ python src/tool_signal_check.py  # ~7 min; writes results/tool_signal_check.json
 - `src/evaluate.py`: scores any alert file against the labels
 - `src/ledger.py`: read-only data access with labels removed
 - `src/tools.py`: the nine investigation tools
+- `src/agent.py`: the triage agent loop, verdict schema, and safety checks
+- `src/models.py`: provider adapters (Claude, OpenAI, mock)
+- `src/run_agent.py`: runs the agent over a sample of alerts
+- `src/evaluate_agent.py`: scores a run against ground truth
 - `src/tool_signal_check.py`: checks the tools' evidence separates true from false alerts
 - `tests/`: automated tests
 - `docs/`: plain-language walkthrough of each step
@@ -73,7 +106,7 @@ python src/tool_signal_check.py  # ~7 min; writes results/tool_signal_check.json
 1. Data ✅ (sample) / IBM dataset (pending)
 2. Rule-based baseline ✅
 3. Investigation tools ✅
-4. Triage agent (risk score, reasons, draft case narrative)
+4. Triage agent ✅ built and tested offline / live measurement (pending)
 5. Investigator review screen
 6. Before/after measurement
 7. Packaging: diagram, demo, write-up

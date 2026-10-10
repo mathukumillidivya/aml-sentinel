@@ -1,0 +1,53 @@
+name: Run triage agent
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: AI provider
+        type: choice
+        options: [anthropic, openai, mock]
+        default: anthropic
+      model:
+        description: Model name (blank = provider default)
+        default: ""
+      n:
+        description: Number of alerts to investigate
+        default: "20"
+      token_budget:
+        description: Stop after this many tokens
+        default: "3000000"
+permissions:
+  contents: write
+concurrency: run-agent
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PROVIDER: ${{ inputs.provider }}
+      MODEL: ${{ inputs.model }}
+      N: ${{ inputs.n }}
+      TOKEN_BUDGET: ${{ inputs.token_budget }}
+      RUN_ID: ${{ inputs.provider }}-run${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q tests
+      - name: Investigate alerts
+        run: python src/run_agent.py --provider "$PROVIDER" --model "$MODEL" --n "$N" --token-budget "$TOKEN_BUDGET" --run-id "$RUN_ID"
+      - name: Score against ground truth
+        run: python src/evaluate_agent.py --run "$RUN_ID"
+      - name: Save results to the repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f "results/agent_runs/$RUN_ID"
+          git commit -m "Add agent run $RUN_ID"
+          git pull --rebase origin main
+          git push origin HEAD:main

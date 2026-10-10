@@ -1,0 +1,229 @@
+"""The triage agent: investigates one alert and returns a verdict for a human.
+
+Loop: the model reads the alert, chooses investigation tools, reads the evidence,
+and repeats until it submits a structured verdict. The agent recommends; a human
+investigator decides.
+
+Safety properties (each covered by a test):
+  * Fail-safe: any error, timeout, or missing verdict ESCALATES to a human.
+    The agent can never dismiss an alert by failing.
+  * Bounded: a hard cap on model turns and tool calls per alert.
+  * Grounded: accounts named in the verdict must appear in tool output.
+  * Auditable: every tool call, result, and the final reasoning is recorded.
+  * Blind: the agent never receives ground-truth labels.
+"""
+from __future__ import annotations
+
+import json
+import re
+import time
+from dataclasses import asdict, dataclass, field
+
+import tools as toolbox
+from ledger import Ledger
+
+MAX_TURNS = 8
+MAX_TOOL_CALLS = 16
+MAX_RESULT_CHARS = 6000
+TYPOLOGIES = ["none", "structuring", "fan_out", "fan_in", "cycle", "pass_through", "layering", "other"]
+
+RULE_MEANINGS = {
+    "R1_LARGE_TXN": "a single transaction of $10,000 or more",
+    "R2_STRUCTURING": "three or more cash deposits between $8,000 and $10,000 within 7 days",
+    "R3_FAN_OUT": "payments of $1,000+ to six or more different accounts in one day",
+    "R4_FAN_IN": "payments of $1,000+ from six or more different accounts in one day",
+    "R5_RAPID_MOVEMENT": "$5,000+ received with at least 80% sent out the same or next day",
+}
+
+SYSTEM_PROMPT = """You are an anti-money-laundering (AML) analyst doing the first-pass review of \
+transaction-monitoring alerts at a bank. A senior human investigator makes the final decision; \
+your job is to investigate, weigh the evidence, and give them a clear recommendation.
+
+Most alerts are false alarms: the monitoring rules are simple thresholds and they flag a great \
+deal of ordinary activity. Your value is in telling the two apart reliably.
+
+How to work
+1. Start from the rule that fired and form a hypothesis about what it might indicate.
+2. Use the tools to test that hypothesis. Always check whether the activity is normal for this \
+account (its history, its account type, whether counterparties are new).
+3. Look for an innocent explanation as seriously as you look for a suspicious one.
+4. If the evidence points to laundering, trace the network to identify the other accounts involved.
+5. When you have enough evidence, call submit_verdict. Do not use more tool calls than you need.
+
+Common innocent explanations
+- Payroll: regular payments to the same recipients on a recurring schedule.
+- Rent or supplier collections: many payers on a predictable date, seen in earlier periods too.
+- Operating businesses: steady money in and out at volumes typical for the account's history.
+- One-off life events: a single large payment to an established business with no onward chain.
+- Cash-intensive businesses: cash deposits across a wide range of amounts over a long period.
+
+Common laundering patterns
+- Structuring: cash deposits clustered just below $10,000, often followed by a wire out.
+- Fan-out / fan-in: a burst of payments to or from many accounts with no prior relationship.
+- Pass-through (mule): funds received and forwarded within hours, nearly intact, to a different party.
+- Cycles: funds leaving and returning through a ring of accounts.
+- Layering: funds split across several accounts and regrouped elsewhere.
+
+An account can also be a minor participant: it may have received or relayed one payment in a \
+scheme run by others. If the account itself looks ordinary but it has a new, unexplained link \
+to accounts behaving suspiciously, examine those accounts before deciding.
+
+Standards
+- Base every statement on tool output. Never invent transactions, amounts, or accounts.
+- Missing history is not evidence of guilt; say so when history is too short to judge.
+- Dismiss only when you have a specific innocent explanation supported by evidence.
+- risk_score is your estimated probability (0-100) that the account is involved in laundering.
+- Escalate when risk_score is 50 or higher.
+"""
+
+VERDICT_TOOL = {
+    "name": "submit_verdict",
+    "description": "Submit the final recommendation for this alert. Call exactly once, when the investigation is complete.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "disposition": {"type": "string", "enum": ["escalate", "dismiss"]},
+            "risk_score": {"type": "integer", "minimum": 0, "maximum": 100},
+            "typology": {"type": "string", "enum": TYPOLOGIES},
+            "key_evidence": {"type": "array", "items": {"type": "string"},
+                             "description": "Specific facts from tool output that support the decision"},
+            "innocent_explanation": {"type": "string",
+                                     "description": "The most plausible innocent explanation, and whether the evidence supports it"},
+            "linked_accounts": {"type": "array", "items": {"type": "string"},
+                                "description": "Other account IDs believed to be part of the same scheme (empty if dismissing)"},
+            "narrative": {"type": "string", "description": "3-6 sentence case summary for the human investigator"},
+        },
+        "required": ["disposition", "risk_score", "typology", "key_evidence", "narrative"],
+    },
+}
+
+
+@dataclass
+class Verdict:
+    alert_id: str
+    account: str
+    disposition: str = "escalate"
+    risk_score: int = 50
+    typology: str = "other"
+    key_evidence: list = field(default_factory=list)
+    innocent_explanation: str = ""
+    linked_accounts: list = field(default_factory=list)
+    narrative: str = ""
+    status: str = "ok"                 # ok | failsafe
+    failure_reason: str = ""
+    dropped_accounts: list = field(default_factory=list)
+    tool_calls: int = 0
+    turns: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cached_tokens: int = 0
+    seconds: float = 0.0
+    trace: list = field(default_factory=list)
+
+    def to_dict(self, with_trace=True):
+        d = asdict(self)
+        if not with_trace:
+            d.pop("trace")
+        return d
+
+
+def alert_prompt(alert_id: str, account: str, date: str, rules: str) -> str:
+    fired = "\n".join(f"- {r}: {RULE_MEANINGS.get(r, 'unknown rule')}" for r in rules.split("|"))
+    return (f"Alert {alert_id}\nAccount: {account}\nAlert date: {date}\nRules that fired:\n{fired}\n\n"
+            "Investigate this alert and submit your verdict.")
+
+
+def validate_verdict(v: dict) -> str | None:
+    """Returns an error message the model can act on, or None if the verdict is usable."""
+    for k in VERDICT_TOOL["input_schema"]["required"]:
+        if k not in v:
+            return f"missing required field '{k}'"
+    if v["disposition"] not in ("escalate", "dismiss"):
+        return "disposition must be 'escalate' or 'dismiss'"
+    if not isinstance(v["risk_score"], (int, float)) or isinstance(v["risk_score"], bool) or not 0 <= v["risk_score"] <= 100:
+        return "risk_score must be a number from 0 to 100"
+    if v["typology"] not in TYPOLOGIES:
+        return f"typology must be one of {TYPOLOGIES}"
+    if not isinstance(v["key_evidence"], list) or not v["key_evidence"]:
+        return "key_evidence must be a non-empty list"
+    if v["disposition"] == "dismiss" and v["risk_score"] >= 50:
+        return "inconsistent: disposition is 'dismiss' but risk_score is 50 or higher"
+    if v["disposition"] == "escalate" and v["risk_score"] < 50:
+        return "inconsistent: disposition is 'escalate' but risk_score is below 50"
+    return None
+
+
+ACCOUNT_RE = re.compile(r"\bA\d{5}\b")
+
+
+def investigate(client, ledger: Ledger, alert_id: str, account: str, date: str, rules: str,
+                max_turns: int = MAX_TURNS, max_tool_calls: int = MAX_TOOL_CALLS) -> Verdict:
+    v = Verdict(alert_id=alert_id, account=account)
+    t0 = time.time()
+    all_tools = toolbox.TOOL_SPECS + [VERDICT_TOOL]
+    messages = [{"role": "user", "content": [{"type": "text", "text": alert_prompt(alert_id, account, date, rules)}]}]
+    seen_accounts = {account}
+    rejected_once = False
+
+    def failsafe(reason):
+        v.status, v.failure_reason = "failsafe", reason
+        v.disposition, v.risk_score, v.typology = "escalate", 50, "other"
+        v.narrative = f"Automated review did not complete ({reason}). Routed to a human investigator."
+        v.seconds = round(time.time() - t0, 2)
+        return v
+
+    for _ in range(max_turns):
+        try:
+            resp = client.complete(SYSTEM_PROMPT, messages, all_tools)
+        except Exception as e:  # network errors, rate limits after retries, bad responses
+            return failsafe(f"model error: {type(e).__name__}")
+        v.turns += 1
+        v.input_tokens += resp.input_tokens
+        v.output_tokens += resp.output_tokens
+        v.cached_tokens += resp.cached_tokens
+        messages.append({"role": "assistant", "content": resp.blocks})
+        for b in resp.blocks:
+            if b["type"] == "text":
+                v.trace.append({"type": "reasoning", "text": b["text"]})
+
+        calls = resp.tool_calls
+        if not calls:
+            messages.append({"role": "user", "content": [{"type": "text", "text":
+                             "Continue the investigation with a tool, or call submit_verdict."}]})
+            continue
+
+        results = []
+        for c in calls:
+            if c["name"] == "submit_verdict":
+                err = validate_verdict(c["input"])
+                if err is None:
+                    d = c["input"]
+                    linked = [a for a in d.get("linked_accounts", []) if isinstance(a, str) and a != account]
+                    v.linked_accounts = [a for a in linked if a in seen_accounts]
+                    v.dropped_accounts = [a for a in linked if a not in seen_accounts]
+                    v.disposition, v.risk_score, v.typology = d["disposition"], int(d["risk_score"]), d["typology"]
+                    v.key_evidence = [str(x) for x in d["key_evidence"]]
+                    v.innocent_explanation = str(d.get("innocent_explanation", ""))
+                    v.narrative = str(d["narrative"])
+                    v.trace.append({"type": "verdict", "input": d})
+                    v.seconds = round(time.time() - t0, 2)
+                    return v
+                if rejected_once:
+                    return failsafe(f"invalid verdict twice: {err}")
+                rejected_once = True
+                results.append({"type": "tool_result", "tool_use_id": c["id"],
+                                "content": json.dumps({"error": f"verdict rejected: {err}. Fix and resubmit."})})
+                v.trace.append({"type": "verdict_rejected", "error": err})
+                continue
+            if v.tool_calls >= max_tool_calls:
+                out = {"error": "tool budget exhausted; call submit_verdict now"}
+            else:
+                v.tool_calls += 1
+                out = toolbox.call_tool(ledger, c["name"], c["input"])
+            text = json.dumps(out, default=str)
+            seen_accounts.update(ACCOUNT_RE.findall(text))
+            v.trace.append({"type": "tool", "name": c["name"], "input": c["input"], "output": out})
+            results.append({"type": "tool_result", "tool_use_id": c["id"], "content": text[:MAX_RESULT_CHARS]})
+        messages.append({"role": "user", "content": results})
+
+    return failsafe("no verdict within the turn limit")
