@@ -5,8 +5,7 @@
 The agent itself: a program that takes one alert, investigates it with the tools
 from step 3, and hands a human investigator a recommendation with its reasoning.
 
-It has not been run with a real AI model yet. That needs your API key. Everything
-around the model is built and tested.
+It now runs on a real AI model. The first results are at the end of this page.
 
 ## How the agent works (the "agent loop")
 
@@ -49,7 +48,7 @@ The term for this is a **provider abstraction** or **adapter pattern**.
 
 ## How we tested without spending money
 
-28 automated tests now pass. For the agent tests, a **scripted stand-in** plays
+33 automated tests now pass. For the agent tests, a **scripted stand-in** plays
 the part of the AI model and says exactly what we tell it to. That lets us check
 the dangerous situations on purpose:
 
@@ -84,6 +83,41 @@ On GitHub, using a feature called **GitHub Actions**: a button in your repositor
 that runs the code on GitHub's computers. Your API key is stored as an encrypted
 **secret** in the repository settings. It is never shown in logs, never in the
 code, and never in this chat.
+
+## The first live runs, and what we learned
+
+| Run | Real alerts kept | False alarms cleared |
+|---|---|---|
+| Run 1 (20 alerts) | 9 of 10 | 2 of 10 |
+| Run 2 (40 alerts) | 16 of 20 | 18 of 20 |
+
+Run 1 worked mechanically but flagged almost everything. Reading its reasoning
+showed three mistakes:
+
+1. **It thought accounts were brand new.** The data starts on 1 January, so
+   early alerts had no history. The agent read "no history" as "just opened".
+2. **It saw networks everywhere.** A business pays many different companies.
+   The tool listed them all and the agent called it a laundering network.
+3. **It overreacted to busy weeks.** Twice the usual volume sounds alarming but
+   is normal for a business.
+
+The fix was the same idea each time: **compare the account with its own past.**
+Every tool now reports the account's own norm beside each signal, the network
+tool follows only specific suspicious behaviour, and the first 30 days are left
+out of scoring because nothing can be compared yet (a **warm-up period**).
+
+This loop, run it, read the failures, find the cause, fix the cause, run again,
+is called **error analysis**. It is the main skill in building AI systems and a
+strong interview story. Tell it with the run 1 number included.
+
+Be honest about the limits when you tell it:
+- 40 alerts is a small sample. "18 of 20" could really be anywhere from 70% to 97%.
+- We fixed things after looking at these alerts, so run 2 flatters us. The honest
+  test is a fresh set of alerts the agent has never been tuned on (a **held-out
+  test set**).
+- Run 2 kept fewer real alerts than run 1 (80% against 90%). Clearing false
+  alarms and keeping real cases pull against each other, and that trade-off is
+  the next thing to work on.
 
 ## Questions an interviewer will ask
 

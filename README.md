@@ -3,9 +3,9 @@
 An AI agent that does the first-pass investigation of anti-money-laundering (AML)
 alerts, so human investigators spend their time on the cases that matter.
 
-**Status: step 4 of 7 built** (sample data, rule-based baseline, investigation
-tools, triage agent). The agent is tested offline and has not yet been measured
-with a live model.
+**Status: step 4 of 7** (sample data, rule-based baseline, investigation tools,
+triage agent). The agent runs end to end on a live model. Results so far are
+small development runs, not final measurements.
 
 ## The problem
 
@@ -66,6 +66,23 @@ Models are swappable (`src/models.py`): Claude, OpenAI, or an offline mock used
 by the tests. Evaluation uses a stratified sample re-weighted to the true alert
 mix, with 95% Wilson confidence intervals on every rate.
 
+### Development runs (Claude Haiku 4.5, sample data)
+
+| Run | Alerts | True alerts escalated | False alarms dismissed | Scheme members found |
+|---|---|---|---|---|
+| run1 | 20 | 9/10 | 2/10 | 33/44 |
+| run2 | 40 | 16/20 (95% CI 58–92%) | 18/20 (95% CI 70–97%) | 100/118 |
+
+Run1 over-escalated: the agent treated short data history as a new account,
+ordinary counterparty turnover as a network, and normal volume swings as
+anomalies. For run2 the tools report each account's own base rate beside every
+signal, `trace_network` follows only specific suspicious links, and the first 30
+days of data are excluded as a warm-up period.
+
+Caveats: the runs are small, the fixes were made after reading run1's errors
+(so run2 is a development result and likely optimistic), and the data is
+synthetic. A held-out sample and the IBM dataset come next.
+
 ## Run it
 
 ```bash
@@ -73,7 +90,7 @@ pip install -r requirements.txt
 python src/generate_data.py      # writes data/transactions.csv
 python src/rules_baseline.py     # writes results/alerts.csv
 python src/evaluate.py           # writes results/baseline_metrics.json
-python -m pytest tests           # 28 tests, no API key needed
+python -m pytest tests           # 33 tests, no API key needed
 python src/tool_signal_check.py  # ~7 min; writes results/tool_signal_check.json
 
 # agent: offline dry run, then a live run
@@ -106,7 +123,7 @@ key from a repository secret.
 1. Data ✅ (sample) / IBM dataset (pending)
 2. Rule-based baseline ✅
 3. Investigation tools ✅
-4. Triage agent ✅ built and tested offline / live measurement (pending)
+4. Triage agent ✅ running on a live model / held-out measurement (pending)
 5. Investigator review screen
 6. Before/after measurement
 7. Packaging: diagram, demo, write-up
