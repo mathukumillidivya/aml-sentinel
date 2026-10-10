@@ -1,0 +1,14 @@
+{
+  "run_id": "anthropic-run2",
+  "provider": "anthropic",
+  "model": "claude-haiku-4-5-20251001",
+  "requested": 40,
+  "completed": 40,
+  "skipped_for_budget": 0,
+  "sample": "stratified",
+  "seed": 11,
+  "alerts_total": 4539,
+  "warmup_days": 30,
+  "data_start": "2026-01-01",
+  "wall_seconds": 229.5
+}
