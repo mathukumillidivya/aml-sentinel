@@ -155,8 +155,12 @@ def main():
     alerts = pd.read_csv(args.alerts, keep_default_na=False)
     data = args.data if Path(args.data).exists() else args.data + ".gz"
     tx = pd.read_csv(data, keep_default_na=False)
+    cfg = json.loads((run / "run_config.json").read_text())
+    if cfg.get("warmup_days"):   # compare against the same population the agent was sampled from
+        cutoff = pd.Timestamp(cfg["data_start"]) + pd.Timedelta(days=cfg["warmup_days"])
+        alerts = alerts[pd.to_datetime(alerts.date) >= cutoff]
     m = evaluate(verdicts, alerts, tx, args.price_in, args.price_out)
-    m["run"] = json.loads((run / "run_config.json").read_text())
+    m["run"] = cfg
     (run / "metrics.json").write_text(json.dumps(m, indent=2))
     md = summary_markdown(run.name, m)
     print(md)

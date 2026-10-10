@@ -17,6 +17,7 @@ class Ledger:
         tx = tx.drop(columns=[c for c in LABEL_COLUMNS if c in tx.columns])
         tx = tx.sort_values("timestamp").reset_index(drop=True)
         self.tx = tx
+        self.data_start = tx.timestamp.min().normalize()   # first day covered by the data
         out = tx.rename(columns={"from_account": "account", "to_account": "counterparty"}).assign(direction="out")
         inc = tx.rename(columns={"to_account": "account", "from_account": "counterparty"}).assign(direction="in")
         both = pd.concat([out, inc], ignore_index=True).sort_values("timestamp")

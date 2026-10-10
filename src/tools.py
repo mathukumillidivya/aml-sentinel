@@ -28,6 +28,69 @@ def _r(x, n=2):
     return round(float(x), n)
 
 
+def _coverage(ledger: Ledger, start) -> dict:
+    """How much earlier data exists. Short history usually means the dataset begins
+    there, which says nothing about the age of the account."""
+    days = max(0, (start - ledger.data_start).days)
+    out = {"data_starts": ledger.data_start.strftime("%Y-%m-%d"), "days_of_data_before_window": int(days)}
+    if days < 14:
+        out["note"] = ("Little or no earlier data exists because the dataset itself starts on this date. "
+                       "This is NOT evidence that the account is new; history-based comparisons are unavailable.")
+    return out
+
+
+def _prior_windows(ledger: Ledger, start, win_days: int, max_windows: int = 12, min_data_days: int = 0):
+    """Earlier back-to-back windows of the same length as the review window, newest first."""
+    out, hi = [], start
+    while len(out) < max_windows:
+        lo = hi - pd.Timedelta(days=win_days)
+        if (lo - ledger.data_start).days < min_data_days:
+            break
+        out.append((lo, hi))
+        hi = lo
+    return out
+
+
+def _material(df):
+    return df[(df.amount >= MATERIAL) & (df.counterparty != "CASH")]
+
+
+def _pass_pairs(win) -> list:
+    """Inflows matched to a similar-sized outflow to a different party within 48 hours."""
+    win = win[win.amount >= MATERIAL]
+    ins, outs = win[win.direction == "in"], win[win.direction == "out"]
+    used, pairs = set(), []
+    for i in ins.itertuples():
+        cand = outs[(outs.timestamp > i.timestamp) & (outs.timestamp <= i.timestamp + pd.Timedelta(hours=48))
+                    & outs.amount.between(0.9 * i.amount, 1.0 * i.amount) & ~outs.index.isin(used)
+                    & (outs.counterparty != i.counterparty)]
+        if len(cand):
+            o = cand.iloc[0]
+            used.add(cand.index[0])
+            pairs.append({"in_from": i.counterparty, "in_amount": _r(i.amount), "out_to": o.counterparty,
+                          "out_amount": _r(o.amount),
+                          "hours_held": _r((o.timestamp - i.timestamp).total_seconds() / 3600, 1)})
+    return pairs
+
+
+def _burst(ledger: Ledger, account: str, start, end, direction: str) -> set:
+    """Counterparties in a one-day burst to/from mostly-new accounts, with no similar day before. Empty if none."""
+    w = _material(ledger.activity(account, start, end))
+    w = w[w.direction == direction]
+    if w.empty:
+        return set()
+    per_day = w.groupby(w.timestamp.dt.normalize()).counterparty.agg(set)
+    cps = max(per_day, key=len)
+    if len(cps) < 5:
+        return set()
+    h = _material(ledger.activity(account, end=start))
+    h = h[h.direction == direction]
+    if len(cps - set(h.counterparty)) / len(cps) < 0.7:
+        return set()
+    prior = h.groupby(h.timestamp.dt.normalize()).counterparty.nunique()
+    return set() if (prior >= max(3, 0.6 * len(cps))).any() else set(cps)
+
+
 def get_account_profile(ledger: Ledger, account: str, as_of: str, lookback_days: int = 7) -> dict:
     """Who is this account and what does its normal activity look like?"""
     start, end = _window(as_of, lookback_days)
@@ -40,11 +103,10 @@ def get_account_profile(ledger: Ledger, account: str, as_of: str, lookback_days:
                 "median": _r(s.amount.median()) if len(s) else 0.0,
                 "max": _r(s.amount.max()) if len(s) else 0.0}
 
-    days_hist = max(1, (start - hist.timestamp.min()).days) if len(hist) else 0
     return {
         "account": account,
         "account_type": ledger.account_type.get(account, "unknown"),
-        "history_days": int(days_hist),
+        **_coverage(ledger, start),
         "history": {"in": side(hist, "in"), "out": side(hist, "out")},
         "window": {"in": side(win, "in"), "out": side(win, "out")},
         "window_days": lookback_days + 2,
@@ -77,8 +139,16 @@ def get_counterparties(ledger: Ledger, account: str, as_of: str, lookback_days: 
                      "transactions": int(len(g)), "seen_before": cp in known})
     rows.sort(key=lambda r: -(r["sent"] + r["received"]))
     new = sum(not r["seen_before"] for r in rows)
+    # How often does this account normally deal with new counterparties? (its own base rate)
+    shares = []
+    for lo, hi in _prior_windows(ledger, start, lookback_days + 2, min_data_days=14):
+        pw = set(_material(ledger.activity(account, lo, hi)).counterparty)
+        if pw:
+            shares.append(len(pw - set(ledger.activity(account, end=lo).counterparty)) / len(pw))
     return {"account": account, "counterparties": len(rows), "new_counterparties": new,
-            "new_share": _r(new / len(rows)) if rows else 0.0, "top": rows[:limit]}
+            "new_share": _r(new / len(rows)) if rows else 0.0,
+            "usual_new_share_in_earlier_periods": _r(pd.Series(shares).median()) if shares else None,
+            "earlier_periods_compared": len(shares), "top": rows[:limit]}
 
 
 def check_structuring(ledger: Ledger, account: str, as_of: str, lookback_days: int = 7) -> dict:
@@ -131,24 +201,15 @@ def check_pass_through(ledger: Ledger, account: str, as_of: str, lookback_days: 
     """Does money arrive and leave again almost untouched within 48 hours (mule behaviour)?"""
     start, end = _window(as_of, lookback_days)
     win = ledger.activity(account, start, end)
-    win = win[win.amount >= MATERIAL]
-    ins = win[win.direction == "in"]
-    outs = win[(win.direction == "out")].copy()
-    used, pairs = set(), []
-    for i in ins.itertuples():
-        cand = outs[(outs.timestamp > i.timestamp) & (outs.timestamp <= i.timestamp + pd.Timedelta(hours=48))
-                    & outs.amount.between(0.9 * i.amount, 1.0 * i.amount) & ~outs.index.isin(used)
-                    & (outs.counterparty != i.counterparty)]
-        if len(cand):
-            o = cand.iloc[0]
-            used.add(cand.index[0])
-            pairs.append({"in_from": i.counterparty, "in_amount": _r(i.amount), "out_to": o.counterparty,
-                          "out_amount": _r(o.amount),
-                          "hours_held": _r((o.timestamp - i.timestamp).total_seconds() / 3600, 1)})
-    total_in = ins.amount.sum()
+    pairs = _pass_pairs(win)
+    total_in = win[(win.direction == "in") & (win.amount >= MATERIAL)].amount.sum()
     matched = sum(p["in_amount"] for p in pairs)
+    prior = _prior_windows(ledger, start, lookback_days + 2)
+    prior_hits = sum(bool(_pass_pairs(ledger.activity(account, lo, hi))) for lo, hi in prior)
     return {"account": account, "matched_pairs": len(pairs), "matched_amount": _r(matched),
-            "share_of_inflow_passed_through": _r(matched / total_in) if total_in else 0.0, "pairs": pairs[:10]}
+            "share_of_inflow_passed_through": _r(matched / total_in) if total_in else 0.0,
+            "earlier_periods_with_matched_pairs": prior_hits, "earlier_periods_compared": len(prior),
+            "pairs": pairs[:10]}
 
 
 def find_cycles(ledger: Ledger, account: str, as_of: str, lookback_days: int = 7) -> dict:
@@ -193,19 +254,21 @@ def compare_to_history(ledger: Ledger, account: str, as_of: str, lookback_days: 
     hist = ledger.activity(account, end=start)
     win = ledger.activity(account, start, end)
     win_days = lookback_days + 2
-    hist_days = max(1, (start - hist.timestamp.min()).days) if len(hist) else 0
+    cov = _coverage(ledger, start)
+    hist_days = cov["days_of_data_before_window"]
+    prior = _prior_windows(ledger, start, win_days)
 
-    def per_period(df, days):
-        return df.amount.sum() / days * win_days if days else 0.0
-
-    res = {"account": account, "history_days": int(hist_days), "enough_history": hist_days >= 14}
+    res = {"account": account, **cov, "enough_history": hist_days >= 14, "earlier_periods_compared": len(prior)}
     for d in ("in", "out"):
         w, h = win[win.direction == d], hist[hist.direction == d]
-        usual = per_period(h, hist_days)
+        usual = h.amount.sum() / hist_days * win_days if hist_days else 0.0
+        totals = [ledger.activity(account, lo, hi).query("direction == @d").amount.sum() for lo, hi in prior]
         res[d] = {
             "window_total": _r(w.amount.sum()),
             "usual_total_for_same_length": _r(usual),
             "ratio_to_usual": _r(w.amount.sum() / usual) if usual > 0 else None,
+            "earlier_periods_with_higher_total": int(sum(t >= w.amount.sum() for t in totals)),
+            "highest_earlier_period_total": _r(max(totals)) if totals else None,
             "largest_in_window": _r(w.amount.max()) if len(w) else 0.0,
             "largest_ever_before": _r(h.amount.max()) if len(h) else 0.0,
         }
@@ -214,27 +277,52 @@ def compare_to_history(ledger: Ledger, account: str, as_of: str, lookback_days: 
 
 def trace_network(ledger: Ledger, account: str, as_of: str, lookback_days: int = 7,
                   hops: int = 2, max_accounts: int = 40) -> dict:
-    """Which other accounts are linked to this one through unusual, material payments?
+    """Which other accounts are tied to this one by specific suspicious behaviour?
 
-    Follows payments of $1,000+ to or from counterparties the account had not
-    dealt with before the window. Used to map the wider network behind a real case.
+    A link is reported only when backed by one of: funds relayed through an account
+    within 48 hours, a one-day burst to or from mostly-new accounts, or a cycle.
+    Ordinary payments are not followed, so an empty result supports an innocent reading.
     """
     start, end = _window(as_of, lookback_days)
     seen, frontier, links = {account}, [account], []
-    for _ in range(hops):
+
+    def link(a, b, reason):
+        if b in ("CASH", a):
+            return
+        links.append({"a": a, "b": b, "reason": reason})
+        if b not in seen and len(seen) <= max_accounts:
+            seen.add(b)
+            nxt.append(b)
+
+    for hop in range(hops):
         nxt = []
         for a in frontier:
             win = ledger.activity(a, start, end)
-            win = win[(win.amount >= MATERIAL) & (win.counterparty != "CASH")]
+            for p in _pass_pairs(win):
+                link(a, p["in_from"], "sent funds that this account forwarded within 48h")
+                link(a, p["out_to"], "received funds this account forwarded within 48h")
+            for d, word in (("out", "paid in"), ("in", "paid into")):
+                for cp in _burst(ledger, a, start, end, d):
+                    link(a, cp, f"{word} a one-day burst involving mostly-new accounts")
             known = set(ledger.activity(a, end=start).counterparty)
-            for cp, g in win[~win.counterparty.isin(known)].groupby("counterparty"):
-                links.append({"a": a, "b": cp, "amount": _r(g.amount.sum())})
-                if cp not in seen and len(seen) < max_accounts:
-                    seen.add(cp)
-                    nxt.append(cp)
+            for cp in set(_material(win).counterparty) - known:
+                for p in _pass_pairs(ledger.activity(cp, start, end)):
+                    if a in (p["in_from"], p["out_to"]):
+                        link(a, cp, "relayed funds to or from this account within 48h")
+                        link(cp, p["out_to"] if p["in_from"] == a else p["in_from"], "other end of the relayed funds")
+                for d in ("out", "in"):
+                    if a in _burst(ledger, cp, start, end, d):
+                        link(a, cp, "hub of a one-day burst that includes this account")
+            if hop == 0:
+                for c in find_cycles(ledger, a, as_of, lookback_days)["cycles"]:
+                    for member in c["path"]:
+                        link(a, member, "member of a cycle returning funds to this account")
         frontier = nxt
-    return {"account": account, "linked_accounts": sorted(seen - {account}), "count": len(seen) - 1,
-            "links": links[:60], "truncated": len(seen) >= max_accounts}
+    out = {"account": account, "linked_accounts": sorted(seen - {account}), "count": len(seen) - 1,
+           "links": links[:60], "truncated": len(seen) > max_accounts}
+    if not links:
+        out["note"] = "No relayed funds, bursts, or cycles connect this account to others in the window."
+    return out
 
 
 TOOLS = {f.__name__: f for f in (get_account_profile, get_transactions, get_counterparties, check_structuring,

@@ -108,3 +108,39 @@ def test_tools_handle_unknown_account_and_bad_calls():
 
 def test_every_tool_has_a_spec():
     assert {s["name"] for s in tools.TOOL_SPECS} == set(tools.TOOLS)
+
+
+def test_short_history_is_flagged_as_a_data_limit_not_a_new_account():
+    led = make([("2026-02-09 09:00", "X", "A", 9000, "wire")])
+    r = tools.compare_to_history(led, "A", ALERT)
+    assert r["days_of_data_before_window"] == 0 and "NOT evidence" in r["note"]
+    assert "note" in tools.get_account_profile(led, "A", ALERT)
+
+
+def test_history_comparison_ranks_window_against_earlier_periods():
+    rows = [(f"2026-01-{d:02d} 10:00", "A", "SUP", 20000, "wire") for d in range(1, 29, 3)]
+    rows += [("2026-02-09 10:00", "A", "SUP", 20000, "wire")]
+    r = tools.compare_to_history(make(rows), "A", ALERT)
+    assert r["earlier_periods_compared"] >= 3 and r["out"]["earlier_periods_with_higher_total"] >= 1
+
+
+def test_counterparty_novelty_is_compared_with_the_accounts_own_norm():
+    # a business that pays a different supplier every few days: new counterparties are normal for it
+    rows = [(f"2026-01-{d:02d} 10:00", "BIZ", f"SUP{d}", 5000, "wire") for d in range(1, 31, 2)]
+    rows += [("2026-02-09 10:00", "BIZ", "SUPX", 5000, "wire")]
+    r = tools.get_counterparties(make(rows), "BIZ", ALERT)
+    assert r["new_share"] == 1.0 and r["usual_new_share_in_earlier_periods"] == 1.0
+
+
+def test_network_trace_is_empty_for_ordinary_payments():
+    rows = [("2026-02-09 10:00", "BIZ", "SUP1", 5000, "wire"), ("2026-02-09 11:00", "BIZ", "SUP2", 12000, "wire"),
+            ("2026-02-08 11:00", "CUST", "BIZ", 3000, "ach")]
+    r = tools.trace_network(make(rows), "BIZ", ALERT)
+    assert r["count"] == 0 and "note" in r
+
+
+def test_network_trace_finds_hub_and_siblings_from_a_minor_recipient():
+    rows = [("2026-01-10 10:00", "HUB", "SHOP", 1200, "card")]
+    rows += [("2026-02-09 10:00", "HUB", f"M{i}", 7000, "wire") for i in range(8)]
+    r = tools.trace_network(make(rows), "M3", ALERT)
+    assert "HUB" in r["linked_accounts"] and {"M0", "M7"} <= set(r["linked_accounts"])
