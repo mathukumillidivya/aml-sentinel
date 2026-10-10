@@ -160,5 +160,52 @@
       "precision": 0.0651
     }
   },
+  "dev_out_of_fold": {
+    "alerts": 18827,
+    "true_alerts": 865,
+    "baseline_precision": 0.0459,
+    "auc": 0.9165,
+    "average_precision": 0.5856,
+    "keep_50pct_true": {
+      "alerts_reviewed": 758,
+      "share_of_alerts": 0.0403,
+      "workload_reduction": 0.9597,
+      "precision": 0.5712
+    },
+    "keep_80pct_true": {
+      "alerts_reviewed": 4099,
+      "share_of_alerts": 0.2177,
+      "workload_reduction": 0.7823,
+      "precision": 0.1688
+    },
+    "keep_90pct_true": {
+      "alerts_reviewed": 5499,
+      "share_of_alerts": 0.2921,
+      "workload_reduction": 0.7079,
+      "precision": 0.1417
+    },
+    "keep_95pct_true": {
+      "alerts_reviewed": 6728,
+      "share_of_alerts": 0.3574,
+      "workload_reduction": 0.6426,
+      "precision": 0.1222
+    }
+  },
+  "review_band": {
+    "rule": "model score at or above the level that keeps 95% of development true alerts (out-of-fold)",
+    "threshold": 0.01219,
+    "dev": {
+      "alerts_in_band": 6724,
+      "share_of_alerts": 0.3571,
+      "true_alerts_kept": 0.9491
+    },
+    "test": {
+      "alerts_in_band": 9249,
+      "share_of_alerts": 0.445,
+      "true_alerts_in_band": 1275,
+      "true_alerts_kept": 0.9375,
+      "precision_in_band": 0.1379
+    }
+  },
   "note": "test days are held out; no feature uses a label"
 }

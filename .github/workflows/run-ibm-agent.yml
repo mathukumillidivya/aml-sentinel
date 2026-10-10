@@ -1,0 +1,70 @@
+name: Run IBM agent
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        type: choice
+        options: [anthropic, openai, mock]
+        default: anthropic
+      model:
+        description: Model name (blank = provider default)
+        default: ""
+      split:
+        type: choice
+        options: [dev, test]
+        default: dev
+      n_true:
+        default: "20"
+      n_false:
+        default: "20"
+      seed:
+        default: "11"
+      token_budget:
+        default: "3000000"
+      run_id:
+        description: Name for this run (blank = automatic)
+        default: ""
+permissions:
+  contents: write
+concurrency: run-ibm-agent
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PROVIDER: ${{ inputs.provider }}
+      MODEL: ${{ inputs.model }}
+      SPLIT: ${{ inputs.split }}
+      N_TRUE: ${{ inputs.n_true }}
+      N_FALSE: ${{ inputs.n_false }}
+      SEED: ${{ inputs.seed }}
+      TOKEN_BUDGET: ${{ inputs.token_budget }}
+      RUN_ID: ${{ inputs.run_id || format('{0}-{1}-run{2}', inputs.provider, inputs.split, github.run_number) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Fetch prepared IBM data
+        run: |
+          git fetch --depth 1 origin ibm-cache
+          mkdir -p data/ibm_prepared
+          git --work-tree=data/ibm_prepared checkout FETCH_HEAD -- .
+          git reset -q
+      - run: python -m pytest -q tests
+      - name: Investigate alerts
+        run: python src/ibm_agent.py --provider "$PROVIDER" --model "$MODEL" --split "$SPLIT" --n-true "$N_TRUE" --n-false "$N_FALSE" --seed "$SEED" --token-budget "$TOKEN_BUDGET" --run-id "$RUN_ID"
+      - name: Score against ground truth
+        run: python src/ibm_agent_eval.py --run "$RUN_ID"
+      - name: Save results to the repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f "results/ibm/agent_runs/$RUN_ID"
+          git commit -m "Add IBM agent run $RUN_ID"
+          git pull --rebase origin main
+          git push origin HEAD:main

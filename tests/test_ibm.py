@@ -104,3 +104,101 @@ def test_pattern_file_parser(tmp_path):
     p = P.read_patterns(f)
     assert p.pattern_type.tolist() == ["FAN-OUT", "STACK"] and p.pattern_id.tolist() == [0, 1]
     assert p["From Bank"].tolist() == [21174, 223]
+
+
+# ---------- agent tools on IBM-style data ----------
+import json  # noqa: E402
+
+import agent  # noqa: E402
+import ibm_agent as A  # noqa: E402
+import ibm_agent_eval as E  # noqa: E402
+import ibm_tools as T  # noqa: E402
+from models import ScriptedClient  # noqa: E402
+
+META = {"currencies": ["Euro", "US Dollar"], "formats": ["ACH", "Cheque"]}
+
+
+def ibm_ledger(rows, minutes=None):
+    tx = ledger(rows)
+    if minutes:
+        tx["minute"] = minutes
+    return T.IBMLedger(tx, META), tx
+
+
+RING = [(0, 9, 8, 50, 1, 0, -1),                      # old relationship, not part of anything
+        (4, 1, 2, 9000, 1, 1, 0), (4, 2, 3, 400, 0, 1, 0), (5, 3, 1, 77000, 1, 1, 0)]
+
+
+def test_ibm_ledger_hides_labels_and_slices_by_day():
+    L, _ = ibm_ledger(RING)
+    assert not set(L.both.columns) & set(T.LABEL_COLUMNS)
+    assert len(L.activity(1)) == 2 and len(L.activity(1, 5, 5)) == 1 and L.activity(12345).empty
+
+
+def test_trace_follows_money_in_time_order_and_finds_the_ring():
+    L, _ = ibm_ledger(RING, minutes=[10, 5800, 5900, 7300])
+    r = T.trace_new_relationships(L, "A000001", "2022-09-05")
+    assert r["cycle_back_to_this_account"] == ["A000001", "A000002", "A000003", "A000001"]
+    assert r["linked_accounts"] == ["A000002", "A000003"]
+    assert r["currencies_along_the_way"] == ["Euro", "US Dollar"]     # amounts and currency change hop to hop
+
+
+def test_trace_refuses_a_ring_that_runs_backwards_in_time():
+    L, _ = ibm_ledger(RING, minutes=[10, 7300, 5900, 5800])           # the "return" leg happens first
+    assert T.trace_new_relationships(L, "A000001", "2022-09-05")["cycle_back_to_this_account"] == []
+
+
+def test_trace_ignores_established_relationships():
+    L, _ = ibm_ledger([(0, 1, 2, 500, 1, 0, -1), (4, 1, 2, 500, 1, 0, -1)])
+    r = T.trace_new_relationships(L, "A000001", "2022-09-05")
+    assert r["accounts_reached"] == 0 and "note" in r
+
+
+def test_account_summary_separates_first_time_from_routine():
+    L, _ = ibm_ledger([(0, 1, 2, 500, 1, 0, -1), (1, 1, 2, 500, 1, 0, -1), (4, 1, 2, 500, 1, 0, -1), (4, 1, 7, 20000, 0, 0, -1)])
+    s = T.account_summary(L, "A000001", "2022-09-05")
+    assert s["all_activity_in_window"]["payments_made"] == 2
+    assert s["first_time_payments_made"]["payments"] == 1 and s["first_time_payments_made"]["currencies"] == ["Euro"]
+    assert s["share_of_window_payments_that_are_first_time"] == 0.5
+
+
+def test_ibm_tools_never_crash_on_bad_input():
+    L, _ = ibm_ledger(RING)
+    for name in T.TOOLS:
+        assert "error" not in T.call_tool(L, name, {"account": "A999999", "as_of": "2022-09-05"})
+    assert "error" in T.call_tool(L, "nope", {}) and "error" in T.call_tool(L, "trace_new_relationships", {"x": 1})
+
+
+def test_case_file_and_agent_run_contain_no_labels():
+    L, _ = ibm_ledger(RING, minutes=[10, 5800, 5900, 7300])
+    msg = A.case_file(L, "IB1", "A000001", "2022-09-05", "N3", 80.0)
+    verdict = [{"type": "tool_use", "id": "v", "name": "submit_verdict", "input": dict(
+        disposition="escalate", risk_score=80, typology="cycle", key_evidence=["ring"], narrative="n",
+        linked_accounts=["A000002", "A000003", "A777777"])}]
+    trace = [{"type": "tool_use", "id": "t", "name": "trace_new_relationships", "input": {"account": "A000001", "as_of": "2022-09-05"}}]
+    client = ScriptedClient([trace, verdict])
+    v = agent.investigate(client, L, "IB1", "A000001", "2022-09-05", "N3", tools=T, system_prompt=A.SYSTEM_PROMPT,
+                          first_message=msg, typologies=A.TYPOLOGIES, escalate_at=A.ESCALATE_AT)
+    sent = json.dumps(client.calls)
+    for leak in ("is_laundering", "pattern_id", "pattern_type", "is_true_alert"):
+        assert leak not in sent
+    assert v.linked_accounts == ["A000002", "A000003"] and v.dropped_accounts == ["A777777"]   # invented account blocked
+
+
+def test_ibm_escalation_threshold_is_enforced():
+    low = dict(disposition="dismiss", risk_score=30, typology="none", key_evidence=["x"], narrative="n")
+    assert "inconsistent" in agent.validate_verdict(low, A.TYPOLOGIES, A.ESCALATE_AT)
+    assert agent.validate_verdict({**low, "disposition": "escalate"}, A.TYPOLOGIES, A.ESCALATE_AT) is None
+
+
+def test_sampling_takes_only_review_band_alerts_from_the_right_split():
+    al = pd.DataFrame({"alert_id": [f"IB{i}" for i in range(40)], "split": ["dev"] * 20 + ["test"] * 20,
+                       "in_band": [True, False] * 20, "is_true_alert": [1, 1, 0, 0] * 10, "day": 4, "model_score": 0.5})
+    s = A.sample_alerts(al, "test", 3, 4, seed=0)
+    assert set(s.split) == {"test"} and s.in_band.all() and s.is_true_alert.sum() == 3 and len(s) == 7
+
+
+def test_review_share_arithmetic_with_weights():
+    y = np.array([1, 0, 1, 0]); s = np.array([.9, .8, .7, .1]); w = np.array([1., 10., 1., 10.])
+    assert round(E.review_share(y, s, w, 0.5), 4) == round(1 / 22, 4)       # the top alert alone holds half the true ones
+    assert round(E.review_share(y, s, w, 1.0), 4) == round(12 / 22, 4)

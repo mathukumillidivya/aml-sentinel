@@ -153,7 +153,14 @@ def alert_prompt(alert_id: str, account: str, date: str, rules: str) -> str:
             "Investigate this alert and submit your verdict.")
 
 
-def validate_verdict(v: dict) -> str | None:
+def make_verdict_tool(typologies: list) -> dict:
+    """The same verdict form with a different list of scheme types (datasets name them differently)."""
+    tool = json.loads(json.dumps(VERDICT_TOOL))
+    tool["input_schema"]["properties"]["typology"]["enum"] = list(typologies)
+    return tool
+
+
+def validate_verdict(v: dict, typologies: list = TYPOLOGIES, escalate_at: int = 50) -> str | None:
     """Returns an error message the model can act on, or None if the verdict is usable."""
     for k in VERDICT_TOOL["input_schema"]["required"]:
         if k not in v:
@@ -162,39 +169,45 @@ def validate_verdict(v: dict) -> str | None:
         return "disposition must be 'escalate' or 'dismiss'"
     if not isinstance(v["risk_score"], (int, float)) or isinstance(v["risk_score"], bool) or not 0 <= v["risk_score"] <= 100:
         return "risk_score must be a number from 0 to 100"
-    if v["typology"] not in TYPOLOGIES:
-        return f"typology must be one of {TYPOLOGIES}"
+    if v["typology"] not in typologies:
+        return f"typology must be one of {list(typologies)}"
     if not isinstance(v["key_evidence"], list) or not v["key_evidence"]:
         return "key_evidence must be a non-empty list"
-    if v["disposition"] == "dismiss" and v["risk_score"] >= 50:
-        return "inconsistent: disposition is 'dismiss' but risk_score is 50 or higher"
-    if v["disposition"] == "escalate" and v["risk_score"] < 50:
-        return "inconsistent: disposition is 'escalate' but risk_score is below 50"
+    if v["disposition"] == "dismiss" and v["risk_score"] >= escalate_at:
+        return f"inconsistent: disposition is 'dismiss' but risk_score is {escalate_at} or higher"
+    if v["disposition"] == "escalate" and v["risk_score"] < escalate_at:
+        return f"inconsistent: disposition is 'escalate' but risk_score is below {escalate_at}"
     return None
 
 
-ACCOUNT_RE = re.compile(r"\bA\d{5}\b")
+ACCOUNT_RE = re.compile(r"\bA\d{5,7}\b")
 
 
-def investigate(client, ledger: Ledger, alert_id: str, account: str, date: str, rules: str,
-                max_turns: int = MAX_TURNS, max_tool_calls: int = MAX_TOOL_CALLS) -> Verdict:
+def investigate(client, ledger, alert_id: str, account: str, date: str, rules: str,
+                max_turns: int = MAX_TURNS, max_tool_calls: int = MAX_TOOL_CALLS,
+                tools=toolbox, system_prompt: str | None = None, first_message: str | None = None,
+                typologies: list = TYPOLOGIES, escalate_at: int = 50) -> Verdict:
+    """Investigate one alert. `tools`, `system_prompt`, `first_message` and `typologies` let another
+    dataset plug in its own evidence tools and case file while keeping every safety check here."""
     v = Verdict(alert_id=alert_id, account=account)
     t0 = time.time()
-    all_tools = toolbox.TOOL_SPECS + [VERDICT_TOOL]
-    messages = [{"role": "user", "content": [{"type": "text", "text": alert_prompt(alert_id, account, date, rules)}]}]
-    seen_accounts = {account}
+    system_prompt = system_prompt or SYSTEM_PROMPT
+    all_tools = tools.TOOL_SPECS + [make_verdict_tool(typologies)]
+    first_message = first_message or alert_prompt(alert_id, account, date, rules)
+    messages = [{"role": "user", "content": [{"type": "text", "text": first_message}]}]
+    seen_accounts = {account} | set(ACCOUNT_RE.findall(first_message))
     rejected_once = False
 
     def failsafe(reason):
         v.status, v.failure_reason = "failsafe", reason
-        v.disposition, v.risk_score, v.typology = "escalate", 50, "other"
+        v.disposition, v.risk_score, v.typology = "escalate", max(50, escalate_at), "other"
         v.narrative = f"Automated review did not complete ({reason}). Routed to a human investigator."
         v.seconds = round(time.time() - t0, 2)
         return v
 
     for _ in range(max_turns):
         try:
-            resp = client.complete(SYSTEM_PROMPT, messages, all_tools)
+            resp = client.complete(system_prompt, messages, all_tools)
         except Exception as e:  # network errors, rate limits after retries, bad responses
             return failsafe(f"model error: {type(e).__name__}")
         v.turns += 1
@@ -215,7 +228,7 @@ def investigate(client, ledger: Ledger, alert_id: str, account: str, date: str, 
         results = []
         for c in calls:
             if c["name"] == "submit_verdict":
-                err = validate_verdict(c["input"])
+                err = validate_verdict(c["input"], typologies, escalate_at)
                 if err is None:
                     d = c["input"]
                     linked = [a for a in d.get("linked_accounts", []) if isinstance(a, str) and a != account]
@@ -239,7 +252,7 @@ def investigate(client, ledger: Ledger, alert_id: str, account: str, date: str, 
                 out = {"error": "tool budget exhausted; call submit_verdict now"}
             else:
                 v.tool_calls += 1
-                out = toolbox.call_tool(ledger, c["name"], c["input"])
+                out = tools.call_tool(ledger, c["name"], c["input"])
             text = json.dumps(out, default=str)
             seen_accounts.update(ACCOUNT_RE.findall(text))
             v.trace.append({"type": "tool", "name": c["name"], "input": c["input"], "output": out})

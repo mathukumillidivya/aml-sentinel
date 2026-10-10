@@ -7,3 +7,4 @@ results/agent_runs/mock-*/
 data/ibm/
 data/ibm_prepared/
 results/ibm/alert_features.parquet
+results/ibm/agent_runs/mock-*/
