@@ -1,0 +1,340 @@
+{
+  "files": {
+    "HI-Small_Patterns.txt": 323844,
+    "HI-Small_Trans.csv": 475664283
+  },
+  "columns": {
+    "Timestamp": "str",
+    "From Bank": "int64",
+    "Account": "str",
+    "To Bank": "int64",
+    "Account.1": "str",
+    "Amount Received": "float64",
+    "Receiving Currency": "str",
+    "Amount Paid": "float64",
+    "Payment Currency": "str",
+    "Payment Format": "str",
+    "Is Laundering": "int64"
+  },
+  "rows": 5078345,
+  "time": {
+    "min": "2022-09-01 00:00:00",
+    "max": "2022-09-18 16:18:00",
+    "per_day": {
+      "2022-09-01": 1114921,
+      "2022-09-02": 754449,
+      "2022-09-03": 207382,
+      "2022-09-04": 207430,
+      "2022-09-05": 482650,
+      "2022-09-06": 482089,
+      "2022-09-07": 482751,
+      "2022-09-08": 482773,
+      "2022-09-09": 654467,
+      "2022-09-10": 208325,
+      "2022-09-11": 396,
+      "2022-09-12": 281,
+      "2022-09-13": 184,
+      "2022-09-14": 121,
+      "2022-09-15": 46,
+      "2022-09-16": 46,
+      "2022-09-17": 23,
+      "2022-09-18": 11
+    }
+  },
+  "laundering": {
+    "count": 5177,
+    "rate": 0.0010194266045335635,
+    "per_day": {
+      "2022-09-01": 322,
+      "2022-09-02": 408,
+      "2022-09-03": 391,
+      "2022-09-04": 407,
+      "2022-09-05": 471,
+      "2022-09-06": 531,
+      "2022-09-07": 497,
+      "2022-09-08": 539,
+      "2022-09-09": 514,
+      "2022-09-10": 442,
+      "2022-09-11": 232,
+      "2022-09-12": 170,
+      "2022-09-13": 106,
+      "2022-09-14": 70,
+      "2022-09-15": 28,
+      "2022-09-16": 26,
+      "2022-09-17": 15,
+      "2022-09-18": 8
+    },
+    "accounts_involved": 6357
+  },
+  "categorical": {
+    "Receiving Currency": {
+      "Australian Dollar": {
+        "n": 138511,
+        "laundering_rate": 0.0009168946870645653
+      },
+      "Bitcoin": {
+        "n": 148151,
+        "laundering_rate": 0.0003779927236400699
+      },
+      "Brazil Real": {
+        "n": 71544,
+        "laundering_rate": 0.0007967125125796713
+      },
+      "Canadian Dollar": {
+        "n": 141357,
+        "laundering_rate": 0.0009055087473559852
+      },
+      "Euro": {
+        "n": 1172017,
+        "laundering_rate": 0.0011706314840143103
+      },
+      "Mexican Peso": {
+        "n": 111030,
+        "laundering_rate": 0.0008286048815635414
+      },
+      "Ruble": {
+        "n": 157361,
+        "laundering_rate": 0.0008451903584750987
+      },
+      "Rupee": {
+        "n": 192065,
+        "laundering_rate": 0.0008694973055996668
+      },
+      "Saudi Riyal": {
+        "n": 89971,
+        "laundering_rate": 0.004156894999499839
+      },
+      "Shekel": {
+        "n": 194988,
+        "laundering_rate": 0.00048720946930067493
+      },
+      "Swiss Franc": {
+        "n": 237884,
+        "laundering_rate": 0.0008113198029291587
+      },
+      "UK Pound": {
+        "n": 181255,
+        "laundering_rate": 0.0007282557722545585
+      },
+      "US Dollar": {
+        "n": 1879341,
+        "laundering_rate": 0.0010173779000192088
+      },
+      "Yen": {
+        "n": 156319,
+        "laundering_rate": 0.0009915621261650854
+      },
+      "Yuan": {
+        "n": 206551,
+        "laundering_rate": 0.0008908211531292513
+      }
+    },
+    "Payment Currency": {
+      "Australian Dollar": {
+        "n": 136769,
+        "laundering_rate": 0.0009285729953425119
+      },
+      "Bitcoin": {
+        "n": 146066,
+        "laundering_rate": 0.000383388331302288
+      },
+      "Brazil Real": {
+        "n": 70703,
+        "laundering_rate": 0.0008061892706108652
+      },
+      "Canadian Dollar": {
+        "n": 140042,
+        "laundering_rate": 0.0009140115108324646
+      },
+      "Euro": {
+        "n": 1168297,
+        "laundering_rate": 0.0011743589172958588
+      },
+      "Mexican Peso": {
+        "n": 110159,
+        "laundering_rate": 0.0008351564556686245
+      },
+      "Ruble": {
+        "n": 155178,
+        "laundering_rate": 0.0008570802562218871
+      },
+      "Rupee": {
+        "n": 190202,
+        "laundering_rate": 0.0008780139010105047
+      },
+      "Saudi Riyal": {
+        "n": 89014,
+        "laundering_rate": 0.004201586267328735
+      },
+      "Shekel": {
+        "n": 192184,
+        "laundering_rate": 0.0004943179453024186
+      },
+      "Swiss Franc": {
+        "n": 234860,
+        "laundering_rate": 0.0008217661585625479
+      },
+      "UK Pound": {
+        "n": 180738,
+        "laundering_rate": 0.0007303389436643096
+      },
+      "US Dollar": {
+        "n": 1895172,
+        "laundering_rate": 0.0010088794051410638
+      },
+      "Yen": {
+        "n": 155209,
+        "laundering_rate": 0.0009986534286027227
+      },
+      "Yuan": {
+        "n": 213752,
+        "laundering_rate": 0.0008608106590815524
+      }
+    },
+    "Payment Format": {
+      "ACH": {
+        "n": 600797,
+        "laundering_rate": 0.007461754968816422
+      },
+      "Bitcoin": {
+        "n": 146091,
+        "laundering_rate": 0.0003833227235079505
+      },
+      "Cash": {
+        "n": 490891,
+        "laundering_rate": 0.0002200081077061914
+      },
+      "Cheque": {
+        "n": 1864331,
+        "laundering_rate": 0.00017378888190991835
+      },
+      "Credit Card": {
+        "n": 1323324,
+        "laundering_rate": 0.0001556686042118181
+      },
+      "Reinvestment": {
+        "n": 481056,
+        "laundering_rate": 0.0
+      },
+      "Wire": {
+        "n": 171855,
+        "laundering_rate": 0.0
+      }
+    }
+  },
+  "numeric": {
+    "Amount Received": {
+      "0.0": 1e-06,
+      "0.01": 0.01680776000000001,
+      "0.25": 183.37,
+      "0.5": 1411.01,
+      "0.75": 12346.27,
+      "0.9": 140736.77,
+      "0.99": 14751232.46,
+      "0.999": 522668529.99,
+      "1.0": 1046302363293.48
+    },
+    "Amount Paid": {
+      "0.0": 1e-06,
+      "0.01": 0.018477,
+      "0.25": 184.48,
+      "0.5": 1414.54,
+      "0.75": 12297.84,
+      "0.9": 137275.3100000004,
+      "0.99": 13524530.705599954,
+      "0.999": 416225565.07,
+      "1.0": 1046302363293.48
+    }
+  },
+  "unique": {
+    "Account": 496995,
+    "Account.1": 420636,
+    "From Bank": 30470,
+    "To Bank": 15811
+  },
+  "accounts_bank_qualified": 515088,
+  "self_transfers": {
+    "n": 591212,
+    "laundering": 11
+  },
+  "txns_per_account": {
+    "0.5": 6.0,
+    "0.9": 51.0,
+    "0.99": 119.0,
+    "0.999": 190.91300000000047,
+    "1.0": 169756.0
+  },
+  "cross_currency_share": 0.014211322783308342,
+  "patterns": {
+    "lines": 4319,
+    "attempts": 370,
+    "by_type": {
+      "BIPARTITE": 49,
+      "SCATTER-GATHER": 44,
+      "STACK": 43,
+      "CYCLE:  Max 2 hops": 14,
+      "RANDOM:  Max 1 hops": 13,
+      "GATHER-SCATTER:  Max 2-degree Fan-In": 9,
+      "CYCLE:  Max 3 hops": 9,
+      "FAN-OUT:  Max 2-degree Fan-Out": 8,
+      "GATHER-SCATTER:  Max 1-degree Fan-In": 8,
+      "FAN-OUT:  Max 1-degree Fan-Out": 8,
+      "RANDOM:  Max 8 hops": 7,
+      "CYCLE:  Max 4 hops": 7,
+      "CYCLE:  Max 10 hops": 6,
+      "GATHER-SCATTER:  Max 10-degree Fan-In": 6,
+      "FAN-IN:  Max 13-degree Fan-In": 6,
+      "GATHER-SCATTER:  Max 3-degree Fan-In": 5,
+      "FAN-IN:  Max 2-degree Fan-In": 5,
+      "GATHER-SCATTER:  Max 12-degree Fan-In": 5,
+      "CYCLE:  Max 7 hops": 5,
+      "FAN-IN:  Max 3-degree Fan-In": 5,
+      "RANDOM:  Max 2 hops": 5,
+      "FAN-OUT:  Max 16-degree Fan-Out": 4,
+      "FAN-IN:  Max 16-degree Fan-In": 4,
+      "FAN-IN:  Max 10-degree Fan-In": 4,
+      "FAN-OUT:  Max 13-degree Fan-Out": 4,
+      "FAN-IN:  Max 1-degree Fan-In": 4,
+      "GATHER-SCATTER:  Max 15-degree Fan-In": 4,
+      "FAN-OUT:  Max 7-degree Fan-Out": 4,
+      "CYCLE:  Max 11 hops": 4,
+      "CYCLE:  Max 8 hops": 4,
+      "GATHER-SCATTER:  Max 13-degree Fan-In": 3,
+      "FAN-OUT:  Max 12-degree Fan-Out": 3,
+      "RANDOM:  Max 3 hops": 3,
+      "FAN-OUT:  Max 9-degree Fan-Out": 3,
+      "FAN-OUT:  Max 4-degree Fan-Out": 3,
+      "CYCLE:  Max 5 hops": 3,
+      "GATHER-SCATTER:  Max 14-degree Fan-In": 3,
+      "RANDOM:  Max 10 hops": 3,
+      "FAN-IN:  Max 8-degree Fan-In": 3,
+      "RANDOM:  Max 5 hops": 2,
+      "GATHER-SCATTER:  Max 8-degree Fan-In": 2,
+      "FAN-OUT:  Max 10-degree Fan-Out": 2,
+      "FAN-OUT:  Max 8-degree Fan-Out": 2,
+      "RANDOM:  Max 9 hops": 2,
+      "FAN-OUT:  Max 11-degree Fan-Out": 2,
+      "FAN-IN:  Max 5-degree Fan-In": 2,
+      "RANDOM:  Max 6 hops": 2,
+      "RANDOM:  Max 11 hops": 2,
+      "FAN-IN:  Max 12-degree Fan-In": 2,
+      "FAN-IN:  Max 6-degree Fan-In": 2,
+      "FAN-OUT:  Max 3-degree Fan-Out": 2,
+      "FAN-IN:  Max 11-degree Fan-In": 2,
+      "GATHER-SCATTER:  Max 7-degree Fan-In": 2,
+      "CYCLE:  Max 6 hops": 1,
+      "GATHER-SCATTER:  Max 11-degree Fan-In": 1,
+      "RANDOM:  Max 7 hops": 1,
+      "FAN-IN:  Max 15-degree Fan-In": 1,
+      "RANDOM:  Max 4 hops": 1,
+      "CYCLE:  Max 12 hops": 1,
+      "GATHER-SCATTER:  Max 6-degree Fan-In": 1,
+      "FAN-OUT:  Max 6-degree Fan-Out": 1,
+      "FAN-OUT:  Max 14-degree Fan-Out": 1,
+      "GATHER-SCATTER:  Max 9-degree Fan-In": 1,
+      "FAN-OUT:  Max 15-degree Fan-Out": 1,
+      "GATHER-SCATTER:  Max 5-degree Fan-In": 1
+    },
+    "transactions_listed": 3209
+  }
+}
