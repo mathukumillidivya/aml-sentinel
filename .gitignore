@@ -5,3 +5,4 @@ __pycache__/
 .pytest_cache/
 results/agent_runs/mock-*/
 data/ibm/
+data/ibm_prepared/
