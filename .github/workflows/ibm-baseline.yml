@@ -1,0 +1,38 @@
+name: IBM baseline (rules + model)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Fetch prepared IBM data
+        run: |
+          git fetch --depth 1 origin ibm-cache
+          mkdir -p data/ibm_prepared
+          git --work-tree=data/ibm_prepared checkout FETCH_HEAD -- .
+          git reset -q
+      - run: python -m pytest -q tests
+      - run: python src/ibm_rules.py
+      - run: python src/ibm_model.py
+      - name: Summary
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          r = json.load(open("results/ibm/rules_baseline.json"))["test"]
+          m = json.load(open("results/ibm/model_baseline.json"))["test"]
+          k = m["keep_80pct_true"]
+          print("### IBM HI-Small, held-out days\n")
+          print("| Measure | Value |\n|---|---|")
+          print(f"| Rule alerts | {r['alerts']:,} |\n| Rule precision | {r['precision']:.1%} |")
+          print(f"| Laundering transactions on alerted accounts | {r['laundering_transaction_recall']:.1%} |")
+          print(f"| Model AUC | {m['auc']} |\n| Workload cut keeping 80% of true alerts | {k['workload_reduction']:.1%} |")
+          PY

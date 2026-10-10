@@ -1,0 +1,164 @@
+{
+  "trained_on": {
+    "days": [
+      4,
+      5
+    ],
+    "alerts": 18827,
+    "true_alerts": 865
+  },
+  "features": [
+    "out_payments",
+    "out_parties",
+    "out_usd",
+    "out_max_usd",
+    "out_currencies",
+    "out_ach",
+    "out_cross_currency",
+    "out_parties_paying_on",
+    "out_parties_made",
+    "out_parties_received_max",
+    "in_payments",
+    "in_parties",
+    "in_usd",
+    "in_max_usd",
+    "in_currencies",
+    "in_ach",
+    "in_cross_currency",
+    "in_parties_paying_on",
+    "in_parties_made",
+    "in_parties_received_max",
+    "history_transactions",
+    "history_first_time_relationships",
+    "history_parties",
+    "window_transactions",
+    "window_usd",
+    "first_time_share",
+    "relay_ratio"
+  ],
+  "test": {
+    "alerts": 20784,
+    "true_alerts": 1360,
+    "baseline_precision": 0.0654,
+    "auc": 0.8956,
+    "average_precision": 0.6254,
+    "keep_50pct_true": {
+      "alerts_reviewed": 955,
+      "share_of_alerts": 0.0459,
+      "workload_reduction": 0.9541,
+      "precision": 0.712
+    },
+    "keep_80pct_true": {
+      "alerts_reviewed": 5554,
+      "share_of_alerts": 0.2672,
+      "workload_reduction": 0.7328,
+      "precision": 0.1959
+    },
+    "keep_90pct_true": {
+      "alerts_reviewed": 8232,
+      "share_of_alerts": 0.3961,
+      "workload_reduction": 0.6039,
+      "precision": 0.1487
+    },
+    "keep_95pct_true": {
+      "alerts_reviewed": 9495,
+      "share_of_alerts": 0.4568,
+      "workload_reduction": 0.5432,
+      "precision": 0.1361
+    }
+  },
+  "test_without_payment_format": {
+    "alerts": 20784,
+    "true_alerts": 1360,
+    "baseline_precision": 0.0654,
+    "auc": 0.8928,
+    "average_precision": 0.6146,
+    "keep_50pct_true": {
+      "alerts_reviewed": 1032,
+      "share_of_alerts": 0.0497,
+      "workload_reduction": 0.9503,
+      "precision": 0.6589
+    },
+    "keep_80pct_true": {
+      "alerts_reviewed": 5704,
+      "share_of_alerts": 0.2744,
+      "workload_reduction": 0.7256,
+      "precision": 0.1907
+    },
+    "keep_90pct_true": {
+      "alerts_reviewed": 8129,
+      "share_of_alerts": 0.3911,
+      "workload_reduction": 0.6089,
+      "precision": 0.1506
+    },
+    "keep_95pct_true": {
+      "alerts_reviewed": 9451,
+      "share_of_alerts": 0.4547,
+      "workload_reduction": 0.5453,
+      "precision": 0.1367
+    }
+  },
+  "test_accounts_never_alerted_in_dev": {
+    "alerts": 15455,
+    "true_alerts": 1143,
+    "baseline_precision": 0.074,
+    "auc": 0.8582,
+    "average_precision": 0.5889,
+    "keep_50pct_true": {
+      "alerts_reviewed": 1031,
+      "share_of_alerts": 0.0667,
+      "workload_reduction": 0.9333,
+      "precision": 0.5548
+    },
+    "keep_80pct_true": {
+      "alerts_reviewed": 5626,
+      "share_of_alerts": 0.364,
+      "workload_reduction": 0.636,
+      "precision": 0.1626
+    },
+    "keep_90pct_true": {
+      "alerts_reviewed": 7529,
+      "share_of_alerts": 0.4872,
+      "workload_reduction": 0.5128,
+      "precision": 0.1367
+    },
+    "keep_95pct_true": {
+      "alerts_reviewed": 8580,
+      "share_of_alerts": 0.5552,
+      "workload_reduction": 0.4448,
+      "precision": 0.1266
+    }
+  },
+  "test_ranked_by_rule_count_only": {
+    "alerts": 20784,
+    "true_alerts": 1360,
+    "baseline_precision": 0.0654,
+    "auc": 0.4642,
+    "average_precision": 0.1644,
+    "keep_50pct_true": {
+      "alerts_reviewed": 11568,
+      "share_of_alerts": 0.5566,
+      "workload_reduction": 0.4434,
+      "precision": 0.0588
+    },
+    "keep_80pct_true": {
+      "alerts_reviewed": 16790,
+      "share_of_alerts": 0.8078,
+      "workload_reduction": 0.1922,
+      "precision": 0.0648
+    },
+    "keep_90pct_true": {
+      "alerts_reviewed": 18910,
+      "share_of_alerts": 0.9098,
+      "workload_reduction": 0.0902,
+      "precision": 0.0647
+    },
+    "keep_95pct_true": {
+      "alerts_reviewed": 19840,
+      "share_of_alerts": 0.9546,
+      "workload_reduction": 0.0454,
+      "precision": 0.0651
+    }
+  },
+  "note": "test days are held out; no feature uses a label"
+}

@@ -1,0 +1,99 @@
+{
+  "protocol": {
+    "tail_rows_dropped": 715,
+    "hub_accounts": 15,
+    "hub_rows_dropped": 452751,
+    "hub_laundering_rows_dropped": 633,
+    "history_days": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "dev_days": [
+      4,
+      5
+    ],
+    "gap_days": [
+      6
+    ],
+    "test_days": [
+      7,
+      8,
+      9
+    ],
+    "review_window": "day-2 .. day+1"
+  },
+  "transactions_scored": 4033667,
+  "dev": {
+    "days": [
+      4,
+      5
+    ],
+    "alerts": 18827,
+    "alerts_per_day": 9414,
+    "true_alerts": 865,
+    "false_alerts": 17962,
+    "precision": 0.0459,
+    "false_positive_share": 0.9541,
+    "laundering_transactions": 868,
+    "laundering_transactions_on_alerted_accounts": 661,
+    "laundering_transaction_recall": 0.7615,
+    "schemes": 162,
+    "schemes_touched": 126,
+    "by_rule": {
+      "N1": {
+        "alerts": 2137,
+        "precision": 0.1404
+      },
+      "N2": {
+        "alerts": 16277,
+        "precision": 0.0336
+      },
+      "N3": {
+        "alerts": 963,
+        "precision": 0.1682
+      },
+      "N4": {
+        "alerts": 48,
+        "precision": 0.7917
+      }
+    }
+  },
+  "test": {
+    "days": [
+      7,
+      8,
+      9
+    ],
+    "alerts": 20784,
+    "alerts_per_day": 6928,
+    "true_alerts": 1360,
+    "false_alerts": 19424,
+    "precision": 0.0654,
+    "false_positive_share": 0.9346,
+    "laundering_transactions": 1318,
+    "laundering_transactions_on_alerted_accounts": 1018,
+    "laundering_transaction_recall": 0.7724,
+    "schemes": 207,
+    "schemes_touched": 160,
+    "by_rule": {
+      "N1": {
+        "alerts": 3090,
+        "precision": 0.1401
+      },
+      "N2": {
+        "alerts": 17121,
+        "precision": 0.0525
+      },
+      "N3": {
+        "alerts": 1251,
+        "precision": 0.2246
+      },
+      "N4": {
+        "alerts": 77,
+        "precision": 0.8312
+      }
+    }
+  }
+}
