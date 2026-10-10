@@ -202,3 +202,10 @@ def test_review_share_arithmetic_with_weights():
     y = np.array([1, 0, 1, 0]); s = np.array([.9, .8, .7, .1]); w = np.array([1., 10., 1., 10.])
     assert round(E.review_share(y, s, w, 0.5), 4) == round(1 / 22, 4)       # the top alert alone holds half the true ones
     assert round(E.review_share(y, s, w, 1.0), 4) == round(12 / 22, 4)
+
+
+def test_review_share_does_not_depend_on_row_order_when_scores_tie():
+    y = np.array([1, 1, 0, 0, 0, 0]); s = np.full(6, 0.1); w = np.ones(6)
+    a = E.review_share(y, s, w, 0.5)
+    b = E.review_share(y[::-1], s, w, 0.5)
+    assert a == b == 0.5        # a score that cannot tell alerts apart saves no work

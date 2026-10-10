@@ -28,11 +28,18 @@ N_BOOT = 2000
 
 
 def review_share(y, s, w, keep: float) -> float:
-    """Share of (weighted) alerts a human must read, highest score first, to keep `keep` of true alerts."""
-    order = np.argsort(-s, kind="stable")
-    hits, load = np.cumsum((y * w)[order]), np.cumsum(w[order])
-    k = min(int(np.searchsorted(hits, keep * hits[-1] - 1e-9)), len(y) - 1)
-    return float(load[k] / load[-1])
+    """Share of (weighted) alerts a human must read, highest score first, to keep `keep` of true alerts.
+
+    Alerts with the same score are indistinguishable to the reader, so true alerts are assumed to
+    be spread evenly through a tied group. Without this, the order alerts happen to be stored in
+    would decide the answer whenever scores tie."""
+    df = pd.DataFrame({"s": s, "t": y * w, "w": w}).groupby("s").sum().sort_index(ascending=False)
+    hits, load = df.t.cumsum().to_numpy(), df.w.cumsum().to_numpy()
+    need = keep * hits[-1]
+    k = int(np.searchsorted(hits, need - 1e-9))
+    prev_hits, prev_load = (hits[k - 1], load[k - 1]) if k else (0.0, 0.0)
+    frac = (need - prev_hits) / (hits[k] - prev_hits) if hits[k] > prev_hits else 1.0
+    return float((prev_load + frac * (load[k] - prev_load)) / load[-1])
 
 
 def ranking(y, s, w) -> dict:

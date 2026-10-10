@@ -3,9 +3,18 @@
 An AI agent that does the first-pass investigation of anti-money-laundering (AML)
 alerts, so human investigators spend their time on the cases that matter.
 
-**Status:** rules and a machine-learning baseline are measured on the public IBM
-AML benchmark. The triage agent is built and measured on synthetic sample data;
-its run on the IBM benchmark is the next step.
+**Status:** rules, a scoring model, and the agent are all measured on held-out
+days of the public IBM AML benchmark.
+
+**Headline findings**
+
+- Rules plus a small scoring model cut the alert workload by 73% while keeping
+  80% of true alerts.
+- The agent does not improve on that model as a scorer. On 300 held-out alerts
+  its ranking was worse (AUC 0.68 against 0.81), and averaging the two was worse
+  than the model alone. A stronger model did not change this.
+- So the model ranks, and the agent is kept for what a model cannot do: writing
+  up the case for a human. That part is not yet measured.
 
 ## The problem
 
@@ -16,15 +25,15 @@ reviewed by a person.
 ## Approach
 
 ```
-transactions -> rules -> alerts -> scoring model -> triage agent -> human investigator
-                (wide net)         (cheap ranking)  (investigates,    (decides)
-                                                     explains, maps
-                                                     the network)
+transactions -> rules -> alerts -> scoring model -> agent -> human investigator
+                (wide net)         (ranks, free)    (writes   (decides)
+                                                     the case
+                                                     file)
 ```
 
 Rules stay as the auditable net. A small model ranks alerts for free. The agent
-investigates with tools, writes up the evidence, and names the other accounts
-involved. A human makes every final decision.
+investigates the alerts worth a human's time and writes up the evidence. A human
+makes every final decision.
 
 ## Results on the IBM AML benchmark (HI-Small)
 
@@ -84,6 +93,45 @@ the transaction-level F1 scores in the graph-neural-network literature. 23% of
 laundering transactions never reach an alerted account, and the model cannot recover
 what the rules miss. HI-Small is one of six IBM variants.
 
+### Does the agent add anything to the model?
+
+The model sets aside the alerts it is confident are ordinary. The remaining
+"review band" on the test days is 9,249 alerts holding 1,275 of the 1,360 true
+alerts (94%). The agent investigated a stratified sample of 300 of them
+(`src/ibm_agent.py`, `src/ibm_agent_eval.py`). Its instructions, tools, and
+escalation cut-off were fixed on development days before the test ran.
+
+| Ranking of the same 300 alerts | AUC | Share of band to read to keep 80% of true alerts |
+|---|---|---|
+| Scoring model alone | 0.810 | 45% |
+| Agent alone (Claude Haiku 4.5) | 0.682 | 67% |
+| Average of the two | 0.785 | 51% |
+
+- Agent minus model: AUC −0.128 (95% CI −0.190 to −0.066).
+- Average minus model: AUC −0.025 (95% CI −0.052 to −0.002).
+- The agent escalated 48 of 120 true alerts (40%) and dismissed 163 of 180 false
+  alarms (91%), leaving 14% of the band for humans. The model alone keeps the
+  same 40% of true alerts in 5.5% of the band.
+- The agent's confident flags (risk 50+) were 52% precise. The model's top slice
+  of the same size was 79% precise.
+- Stronger model: Claude Sonnet 5.5 on 100 of the same alerts scored AUC 0.657,
+  against 0.613 for Haiku and 0.739 for the scoring model on those alerts.
+- Network: the agent named 221 linked accounts, 86% of them correct, and found 16%
+  of labeled scheme members. Returning everything the trace tool finds gives 81%
+  correct and 23% found, so the agent's filtering trades recall for a little precision.
+- Operations: 2 fail-safe escalations in 300, 3.7 tool calls, about 13,500 input and
+  1,600 output tokens, roughly 2 cents and 18 seconds per alert.
+
+Why the agent lost: the model learned from 18,827 labeled development alerts what
+laundering looks like in this data. The agent has a page of guidance and its own
+priors. In the first development run it escalated bursts of incoming payments as
+"fan-in" schemes, which here occur at the base rate. Told so, it compressed most
+scores into a narrow range and lost resolution. Development runs showed the same
+gap before the test (AUC 0.78 against 0.92, then 0.80 against 0.84).
+
+What this does not show: whether the agent's written case files save an
+investigator time. That needs human raters and is not measured here.
+
 ## Results on synthetic sample data (triage agent)
 
 The agent was developed on a synthetic dataset written for this project
@@ -115,8 +163,9 @@ anomalies. The tools now report each account's own base rate beside every
 signal. Run2's 90% dismissal rate fell to 76% on held-out alerts, the expected
 gap between a development set and a test set.
 
-Limits: this data was written by the project author, so these figures show the
-agent works end to end and are not a benchmark claim.
+Limits: this data was written by the project author, and the agent's tools were
+written to match how that data was generated. The IBM results above show the
+agent's advantage here does not carry over to data it was not designed around.
 
 ## The agent
 
@@ -140,7 +189,7 @@ mix, with 95% Wilson confidence intervals on every rate.
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests                # 46 tests, no API key needed
+python -m pytest tests                # 57 tests, no API key needed
 
 # synthetic sample pipeline
 python src/generate_data.py
@@ -154,6 +203,8 @@ python src/evaluate_agent.py --run <run_id>
 python src/ibm_prepare.py             # raw CSV -> data/ibm_prepared/
 python src/ibm_rules.py               # results/ibm/rules_baseline.json
 python src/ibm_model.py               # results/ibm/model_baseline.json
+python src/ibm_agent.py --provider anthropic --split test --n-true 120 --n-false 180
+python src/ibm_agent_eval.py --run <run_id>
 ```
 
 Each stage also has a workflow under the Actions tab, which reads keys from
@@ -162,6 +213,7 @@ repository secrets.
 ## Layout
 
 - `src/ibm_prepare.py`, `ibm_data.py`, `ibm_rules.py`, `ibm_features.py`, `ibm_model.py`: IBM benchmark pipeline
+- `src/ibm_tools.py`, `ibm_agent.py`, `ibm_agent_eval.py`: the agent on IBM data and its comparison with the model
 - `src/generate_data.py`, `rules_baseline.py`, `evaluate.py`: synthetic sample pipeline
 - `src/ledger.py`, `tools.py`: read-only data access and the nine investigation tools
 - `src/agent.py`, `models.py`: the agent loop and provider adapters
@@ -176,6 +228,6 @@ repository secrets.
 2. Investigation tools ✅
 3. Triage agent, measured on sample data ✅
 4. IBM benchmark: rules and model baseline ✅
-5. IBM benchmark: agent on top of the model (next)
-6. Investigator review screen
+5. IBM benchmark: agent compared with the model ✅
+6. Investigator review screen showing the agent's case files
 7. Packaging: diagram, demo, write-up

@@ -19,8 +19,8 @@
     "agent": {
       "auc": 0.7793,
       "average_precision": 0.3096,
-      "review_share_to_keep_80pct": 0.3786,
-      "review_share_to_keep_90pct": 0.4084
+      "review_share_to_keep_80pct": 0.3962,
+      "review_share_to_keep_90pct": 0.461
     },
     "combined": {
       "auc": 0.8693,
