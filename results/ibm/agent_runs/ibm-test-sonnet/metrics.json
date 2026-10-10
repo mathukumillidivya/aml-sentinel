@@ -1,0 +1,152 @@
+{
+  "sample": {
+    "alerts": 100,
+    "true_alerts": 40,
+    "false_alarms": 60
+  },
+  "band": {
+    "alerts": 9249,
+    "true_alerts": 1275,
+    "precision": 0.1379
+  },
+  "ranking": {
+    "model": {
+      "auc": 0.7387,
+      "average_precision": 0.6038,
+      "review_share_to_keep_80pct": 0.6994,
+      "review_share_to_keep_90pct": 0.9
+    },
+    "agent": {
+      "auc": 0.6569,
+      "average_precision": 0.4649,
+      "review_share_to_keep_80pct": 0.5414,
+      "review_share_to_keep_90pct": 0.7276
+    },
+    "combined": {
+      "auc": 0.7283,
+      "average_precision": 0.5625,
+      "review_share_to_keep_80pct": 0.6707,
+      "review_share_to_keep_90pct": 0.785
+    }
+  },
+  "agent_vs_model": {
+    "auc_gap": -0.084,
+    "ci95": [
+      -0.2146,
+      0.0552
+    ],
+    "significant": false
+  },
+  "combined_vs_model": {
+    "auc_gap": -0.0118,
+    "ci95": [
+      -0.0988,
+      0.0792
+    ],
+    "significant": false
+  },
+  "agent_decision": {
+    "escalate_at": 15,
+    "true_alerts_escalated": {
+      "count": 21,
+      "of": 40,
+      "rate": 0.525,
+      "ci95": [
+        0.375,
+        0.6706
+      ]
+    },
+    "false_alarms_dismissed": {
+      "count": 45,
+      "of": 60,
+      "rate": 0.75,
+      "ci95": [
+        0.6277,
+        0.8422
+      ]
+    },
+    "alerts_for_human_review": 2663,
+    "share_of_band": 0.2879,
+    "precision": 0.2514
+  },
+  "model_at_same_retention": {
+    "true_alerts_kept": 0.525,
+    "share_of_band": 0.1298
+  },
+  "network": {
+    "agent": {
+      "accounts_named_correct": {
+        "count": 31,
+        "of": 37,
+        "rate": 0.8378,
+        "ci95": [
+          0.6886,
+          0.9235
+        ]
+      },
+      "scheme_members_found": {
+        "count": 31,
+        "of": 234,
+        "rate": 0.1325,
+        "ci95": [
+          0.0949,
+          0.1819
+        ]
+      }
+    },
+    "trace_tool_unfiltered": {
+      "accounts_named_correct": {
+        "count": 49,
+        "of": 74,
+        "rate": 0.6622,
+        "ci95": [
+          0.5488,
+          0.7595
+        ]
+      },
+      "scheme_members_found": {
+        "count": 49,
+        "of": 234,
+        "rate": 0.2094,
+        "ci95": [
+          0.1622,
+          0.266
+        ]
+      }
+    },
+    "invented_accounts_blocked": 0
+  },
+  "operations": {
+    "failsafe_escalations": {
+      "count": 0,
+      "of": 100,
+      "rate": 0.0,
+      "ci95": [
+        0,
+        0.037
+      ]
+    },
+    "failure_reasons": {},
+    "avg_tool_calls": 1.23,
+    "avg_turns": 2.06,
+    "avg_seconds": 8.86,
+    "avg_input_tokens": 8847,
+    "avg_output_tokens": 958,
+    "total_input_tokens": 884716,
+    "total_output_tokens": 95840
+  },
+  "run": {
+    "run_id": "ibm-test-sonnet",
+    "provider": "anthropic",
+    "model": "claude-sonnet-5-5",
+    "split": "test",
+    "seed": 101,
+    "requested": 100,
+    "completed": 100,
+    "skipped_for_budget": 0,
+    "band_alerts": 9249,
+    "band_true_alerts": 1275,
+    "escalate_at": 15,
+    "wall_seconds": 286.0
+  }
+}
