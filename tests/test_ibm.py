@@ -187,8 +187,8 @@ def test_case_file_and_agent_run_contain_no_labels():
 
 def test_ibm_escalation_threshold_is_enforced():
     low = dict(disposition="dismiss", risk_score=30, typology="none", key_evidence=["x"], narrative="n")
-    assert "inconsistent" in agent.validate_verdict(low, A.TYPOLOGIES, A.ESCALATE_AT)
-    assert agent.validate_verdict({**low, "disposition": "escalate"}, A.TYPOLOGIES, A.ESCALATE_AT) is None
+    assert "inconsistent" in agent.validate_verdict(low, A.TYPOLOGIES, 25)
+    assert agent.validate_verdict({**low, "disposition": "escalate"}, A.TYPOLOGIES, 25) is None
 
 
 def test_sampling_takes_only_review_band_alerts_from_the_right_split():

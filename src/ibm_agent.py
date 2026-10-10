@@ -21,7 +21,7 @@ import ibm_tools as T
 from agent import investigate
 from models import ModelResponse, make_client
 
-ESCALATE_AT = 25      # roughly twice the base rate; missing a real case costs more than reading a false alarm
+ESCALATE_AT = 15      # set on development run dev2; missing a real case costs more than reading a false alarm
 TYPOLOGIES = ["none", "fan_out", "fan_in", "cycle", "scatter_gather", "gather_scatter", "stack", "bipartite",
               "random", "other"]
 RULE_MEANINGS = {
