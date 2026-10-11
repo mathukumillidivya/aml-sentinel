@@ -13,8 +13,9 @@ days of the public IBM AML benchmark.
 - The agent does not improve on that model as a scorer. On 300 held-out alerts
   its ranking was worse (AUC 0.68 against 0.81), and averaging the two was worse
   than the model alone. A stronger model did not change this.
-- So the model ranks, and the agent is kept for what a model cannot do: writing
-  up the case for a human. That part is not yet measured.
+- So the model ranks, and the agent does what a model cannot: it writes the case
+  file. Checked mechanically, 95% of its case files are fully traceable to the
+  evidence it retrieved, and 813 of 814 accounts it named were in that evidence.
 
 ## The problem
 
@@ -129,6 +130,35 @@ priors. In the first development run it escalated bursts of incoming payments as
 scores into a narrow range and lost resolution. Development runs showed the same
 gap before the test (AUC 0.78 against 0.92, then 0.80 against 0.84).
 
+### What the agent is good at: case files that stick to the evidence
+
+`src/ibm_faithfulness.py` checks every account ID and dollar figure in the
+agent's narrative and evidence list against what the agent was shown (its
+starting case file plus every tool result). No second model is involved.
+
+| Check on the held-out case files | Claude Haiku 4.5 (298 files) | Claude Sonnet 5.5 (100 files) |
+|---|---|---|
+| Accounts named that were in the evidence | 813 of 814 | 288 of 288 |
+| Dollar figures found as written | 97.5% of 1,121 | 99.5% of 578 |
+| Dollar figures that are sums of listed payments | 1.2% | 0% |
+| Dollar figures not traceable | 1.3% (15) | 0.5% (3) |
+| Case files with nothing untraceable | 95% (283 of 298) | 97% (97 of 100) |
+
+All 15 untraced Haiku figures were read by hand: differences, rounded limits,
+and currency conversions, none an obviously invented amount. The check confirms
+a figure exists in the evidence, not that the sentence around it is correct.
+
+### What did not work
+
+- **Naming the scheme type.** Right for 7 of 47 escalated alerts in a labeled
+  scheme (Haiku) and 0 of 16 (Sonnet). One account's neighbourhood does not show
+  the shape of a whole scheme.
+- **Retrieval.** `src/ibm_cases.py` shows the agent the 25 most similar
+  development-period alerts and their outcomes. Offline, those neighbours alone
+  score AUC 0.74 in the review band against the model's 0.80. In a 50-alert
+  development trial the agent scored 0.77 with them and 0.79 without, on the
+  same alerts, so the idea was not taken to the held-out test.
+
 What this does not show: whether the agent's written case files save an
 investigator time. That needs human raters and is not measured here.
 
@@ -204,7 +234,7 @@ mix, with 95% Wilson confidence intervals on every rate.
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests                # 57 tests, no API key needed
+python -m pytest tests                # 65 tests, no API key needed
 
 # synthetic sample pipeline
 python src/generate_data.py
@@ -220,6 +250,7 @@ python src/ibm_rules.py               # results/ibm/rules_baseline.json
 python src/ibm_model.py               # results/ibm/model_baseline.json
 python src/ibm_agent.py --provider anthropic --split test --n-true 120 --n-false 180
 python src/ibm_agent_eval.py --run <run_id>
+python src/ibm_faithfulness.py --run <run_id>
 ```
 
 Each stage also has a workflow under the Actions tab, which reads keys from
@@ -229,6 +260,8 @@ repository secrets.
 
 - `src/ibm_prepare.py`, `ibm_data.py`, `ibm_rules.py`, `ibm_features.py`, `ibm_model.py`: IBM benchmark pipeline
 - `src/ibm_tools.py`, `ibm_agent.py`, `ibm_agent_eval.py`: the agent on IBM data and its comparison with the model
+- `src/ibm_faithfulness.py`: checks the agent's case files against its evidence
+- `src/ibm_cases.py`: library of past cases for retrieval
 - `src/generate_data.py`, `rules_baseline.py`, `evaluate.py`: synthetic sample pipeline
 - `src/ledger.py`, `tools.py`: read-only data access and the nine investigation tools
 - `src/agent.py`, `models.py`: the agent loop and provider adapters

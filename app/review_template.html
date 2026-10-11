@@ -343,6 +343,21 @@ function renderResults() {
     </div>
   </section>
 
+  <section class="sim" aria-label="How faithful the agent's case files are">
+    <div class="ctl">
+      <p class="eyebrow">What the agent is for</p>
+      <h3>Case files a reviewer can trace back to the evidence</h3>
+      <p class="cap" style="font-size:13px">A scoring model cannot write a case file. The agent can, so its writing was checked mechanically: every account and every dollar figure in ${F.faith.case_files_checked} case files was looked up in the evidence the agent had actually retrieved.</p>
+      <p class="cap">The check confirms a figure exists in the evidence. It does not confirm the sentence around it is right, and the untraced figures are mostly differences, rounded limits, and currency conversions the check cannot follow.</p>
+    </div>
+    <div class="outs">
+      <div class="out key"><div class="n">${pc(F.faith.case_files_fully_traceable.rate)}</div><div class="l">of case files fully traceable (${F.faith.case_files_fully_traceable.count} of ${F.faith.case_files_fully_traceable.of})</div></div>
+      <div class="out key"><div class="n">${F.faith.accounts_cited_grounded.count} of ${F.faith.accounts_cited_grounded.of}</div><div class="l">accounts named were in the evidence</div></div>
+      <div class="out"><div class="n">${pc(F.faith.amounts_found_in_evidence.rate, 1)}</div><div class="l">of ${num(F.faith.amounts_cited)} dollar figures found in the evidence as written</div></div>
+      <div class="out"><div class="n">${pc(F.faith.amounts_unsupported.rate, 1)}</div><div class="l">of figures could not be traced (${F.faith.amounts_unsupported.count})</div></div>
+    </div>
+  </section>
+
   <section class="panel">
     <h3>Organised schemes almost never slip past the ranking</h3>
     <p>Of ${num(F.labeled)} real alerts that belong to a labeled laundering scheme, ${num(F.labeled_top)} (${pc(F.labeled_top / F.labeled)}) land in the ${num(k80.alerts_reviewed)} alerts read first. The misses are mostly one-off laundering payments outside any scheme.</p>
@@ -366,6 +381,7 @@ function renderResults() {
     <ul class="limits">
       <li>${pc(1 - F.txn_recall)} of laundering payments never trigger a rule, and nothing later can recover them.</li>
       <li>Whether the agent's case files save an investigator time has not been measured.</li>
+      <li>The agent rarely names the right scheme type (7 of 47), and showing it similar past cases did not improve its ranking in a trial.</li>
       <li>This is one of six IBM benchmark variants, and the data is synthetic.</li>
     </ul>
   </section>
