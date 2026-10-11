@@ -1,41 +1,65 @@
 # AML Sentinel
 
-An AI agent that does the first-pass investigation of anti-money-laundering (AML)
-alerts, so human investigators spend their time on the cases that matter.
+[![Tests](https://github.com/mathukumillidivya/aml-sentinel/actions/workflows/tests.yml/badge.svg)](https://github.com/mathukumillidivya/aml-sentinel/actions/workflows/tests.yml)
 
-**Status:** rules, a scoring model, and the agent are all measured on held-out
-days of the public IBM AML benchmark.
+Money-laundering alert triage, measured on the public IBM AML benchmark. Rules
+raise alerts, a scoring model ranks them, an LLM agent writes the case file, and
+a person decides.
 
-**Headline findings**
+| On held-out test days | HI-Small | LI-Small (nothing re-tuned) |
+|---|---|---|
+| Alerts from rules alone | 20,784, of which 93.5% false alarms | 27,297, of which 96.6% false alarms |
+| Workload cut keeping 80% of true alerts | 73% | 68% |
+| Workload cut keeping 90% | 60% | 61% |
+| True alerts from labeled schemes in the alerts read first | 768 of 786 | 221 of 245 |
 
-- Rules plus a small scoring model cut the alert workload by 73% while keeping
-  80% of true alerts. On a second dataset, with nothing re-tuned, the cut is 68%,
-  and the first dataset's model applied unchanged gives 67%.
-- The agent does not improve on that model as a scorer. On 300 held-out alerts
-  its ranking was worse (AUC 0.68 against 0.81), and averaging the two was worse
-  than the model alone. A stronger model did not change this.
-- So the model ranks, and the agent does what a model cannot: it writes the case
-  file. Checked mechanically, 95% of its case files are fully traceable to the
-  evidence it retrieved, and 813 of 814 accounts it named were in that evidence.
+**Findings**
+
+- **Ranking.** Rules plus a gradient-boosted model cut the alert workload by 73%
+  while keeping 80% of true alerts. On a second dataset the cut is 68%, and the
+  first dataset's model applied unchanged gives 67%.
+- **The agent is not the scorer.** On 300 held-out alerts the LLM agent ranked
+  worse than the model (AUC 0.68 against 0.81; gap −0.13, 95% CI −0.19 to −0.07).
+  Averaging the two was worse than the model alone. A stronger LLM and a
+  retrieval step did not change this.
+- **The agent writes the case file, faithfully.** A mechanical check of every
+  account and dollar figure it wrote found 95% of case files fully traceable to
+  the evidence it retrieved, and 813 of 814 named accounts in that evidence.
+- **What it misses.** 23% of laundering transactions never reach an alerted
+  account (37% on the second dataset), and the agent names the right scheme type
+  for only 7 of 47.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    T[(Transactions)] --> R["Rules<br/>4 rules on first-time<br/>counterparty relationships"]
+    R -->|"20,784 alerts, 6.5% true"| M["Scoring model<br/>gradient-boosted trees<br/>27 evidence features"]
+    M -->|"ranked queue"| H{{"Human investigator<br/>decides"}}
+    M -->|"alerts worth a case file"| A["LLM agent<br/>tool-use loop"]
+    A -->|"case file and audit trail"| H
+    L[("Read-only ledger<br/>labels removed")] -->|"account summary, payments,<br/>network trace"| A
+    subgraph S["Agent safeguards"]
+        direction TB
+        S1["Fail-safe to a human"]
+        S2["Step and token limits"]
+        S3["Named accounts must be in the evidence"]
+        S4["Full trace per alert"]
+    end
+    A -.-> S
+```
+
+- **Rules** stay as the auditable net. None uses the payment format.
+- **Scoring model** ranks every alert at no cost per alert.
+- **Agent** investigates with tools and writes the evidence up. It recommends; it does not decide.
+- **Evaluation** uses a time split (tune on days 4-5, report on days 7-9), stratified
+  samples re-weighted to the true mix, and confidence intervals on every rate.
 
 ## The problem
 
 Banks monitor transactions with threshold rules. The rules are cheap and easy to
 audit, but they flag large numbers of innocent customers, and every alert is
 reviewed by a person.
-
-## Approach
-
-```
-transactions -> rules -> alerts -> scoring model -> agent -> human investigator
-                (wide net)         (ranks, free)    (writes   (decides)
-                                                     the case
-                                                     file)
-```
-
-Rules stay as the auditable net. A small model ranks alerts for free. The agent
-investigates the alerts worth a human's time and writes up the evidence. A human
-makes every final decision.
 
 ## Results on the IBM AML benchmark (HI-Small)
 
@@ -184,56 +208,6 @@ a figure exists in the evidence, not that the sentence around it is correct.
 What this does not show: whether the agent's written case files save an
 investigator time. That needs human raters and is not measured here.
 
-## Investigator review screen
-
-`app/review.html` is a single self-contained page (`python src/build_review_screen.py`
-rebuilds it). It shows the 300 held-out alerts the agent investigated: the queue
-ranked by the scoring model, and for each alert the activity summary, the
-first-time payment network, the agent's case file and audit trail, and decision
-buttons. A results view carries the measured figures and a workload calculator.
-Benchmark labels stay hidden until the viewer asks for them.
-
-Published as a Claude artifact, the page also runs the agent live: "Investigate
-live" starts a tool-using investigation in the page with each lookup shown as it
-happens, and a question box answers in plain language from the case data. Live
-runs use the same guidance as the tested agent, vary from run to run, and are not
-part of the measured results.
-
-## Results on synthetic sample data (triage agent)
-
-The agent was developed on a synthetic dataset written for this project
-(`src/generate_data.py`: 160,457 transactions, 60 planted schemes). Held-out test
-of 100 alerts, Claude Haiku 4.5, re-weighted to the real alert mix:
-
-| Measure | Rules only | With agent |
-|---|---|---|
-| Alerts needing human review | 4,490 | about 1,190 (74% fewer) |
-| Precision | 3.7% | 11.5% |
-| False alarms dismissed | n/a | 38/50 (76%, 95% CI 63–86%) |
-| True alerts escalated | n/a | 41/50 (82%, 95% CI 69–90%) |
-| Other scheme members identified | n/a | 309/369 (84%, 95% CI 80–87%) |
-| Accounts named that were correct | n/a | 342/384 (89%) |
-| Fail-safe escalations | n/a | 2/100 (malformed verdicts, routed to a human) |
-| Tokens per alert (in / out) | n/a | 18,400 / 1,750 |
-
-Development history:
-
-| Run | Alerts | True alerts escalated | False alarms dismissed |
-|---|---|---|---|
-| run1 (dev) | 20 | 9/10 | 2/10 |
-| run2 (dev) | 40 | 16/20 | 18/20 |
-| run3 (held-out) | 100 | 41/50 | 38/50 |
-
-Run1 over-escalated: the agent treated short data history as a new account,
-ordinary counterparty turnover as a network, and normal volume swings as
-anomalies. The tools now report each account's own base rate beside every
-signal. Run2's 90% dismissal rate fell to 76% on held-out alerts, the expected
-gap between a development set and a test set.
-
-Limits: this data was written by the project author, and the agent's tools were
-written to match how that data was generated. The IBM results above show the
-agent's advantage here does not carry over to data it was not designed around.
-
 ## The agent
 
 `src/agent.py` runs a tool-use loop: the model reads the alert, picks tools,
@@ -251,6 +225,28 @@ typology, evidence, innocent explanation considered, linked accounts, narrative)
 Models are swappable (`src/models.py`): Claude, OpenAI, or an offline mock used
 by the tests. Evaluation uses a stratified sample re-weighted to the true alert
 mix, with 95% Wilson confidence intervals on every rate.
+
+## Investigator review screen
+
+`app/review.html` is a single self-contained page (`python src/build_review_screen.py`
+rebuilds it). It shows the 300 held-out alerts the agent investigated: the queue
+ranked by the scoring model, and for each alert the activity summary, the
+first-time payment network, the agent's case file and audit trail, and decision
+buttons. A results view carries the measured figures and a workload calculator.
+Benchmark labels stay hidden until the viewer asks for them.
+
+Published as a Claude artifact, the page also runs the agent live: "Investigate
+live" starts a tool-using investigation in the page with each lookup shown as it
+happens, and a question box answers in plain language from the case data. Live
+runs use the same guidance as the tested agent, vary from run to run, and are not
+part of the measured results.
+
+## Earlier work on synthetic data
+
+The agent was first built against a synthetic dataset written for this project.
+It looked strong there (74% fewer alerts at 82% of true alerts kept) because its
+tools matched how that data was generated. The IBM benchmark showed the
+advantage did not carry over. Details: [docs/synthetic-sample.md](docs/synthetic-sample.md).
 
 ## Run it
 
@@ -291,15 +287,19 @@ repository secrets.
 - `src/run_agent.py`, `evaluate_agent.py`: run and score the agent
 - `src/build_review_screen.py`, `app/`: the investigator review screen
 - `tests/`: automated tests
-- `docs/`: plain-language walkthrough of each step
+- `docs/`: notes on the earlier synthetic-data work
 - `results/`: every number quoted above, as produced by the code
 
-## Roadmap
+## Data and licence
 
-1. Sample data and rules baseline ✅
-2. Investigation tools ✅
-3. Triage agent, measured on sample data ✅
-4. IBM benchmark: rules and model baseline ✅
-5. IBM benchmark: agent compared with the model ✅
-6. Investigator review screen ✅
-7. Packaging: diagram, demo, write-up
+- Code: MIT (see `LICENSE`).
+- Data: [IBM Transactions for Anti Money Laundering](https://www.kaggle.com/datasets/ealtman2019/ibm-transactions-for-anti-money-laundering-aml),
+  Altman et al., NeurIPS 2023, released under CDLA-Sharing-1.0. The benchmark is
+  synthetic and contains no real customers. Files derived from it in this
+  repository are listed in `DATA.md` and carry the same licence.
+
+## How this was built
+
+Built with an AI coding assistant (Claude); the commit history records the
+co-authorship. Every figure in this README is produced by code in this
+repository and stored under `results/`.
