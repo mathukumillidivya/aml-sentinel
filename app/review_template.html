@@ -1,0 +1,267 @@
+<title>AML Sentinel Case Desk</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a compliance case desk. Queue on the left ranked by the model, one case file on the right; stacks on phones. */
+:root {
+  --bg: #eef0f3; --surface: #fbfcfd; --sunk: #e3e6eb; --line: #cfd4dc;
+  --ink: #1a2230; --muted: #5a6577; --accent: #0d5f6e; --accent-ink: #ffffff; --accent-soft: #d6eaed;
+  --hi: #a8321f; --hi-soft: #f6dcd6; --mid: #8a5a00; --mid-soft: #f5e6c4; --lo: #2d6a3e; --lo-soft: #d9ecde;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12161d; --surface: #1a2029; --sunk: #232a35; --line: #343d4b;
+  --ink: #e6eaf0; --muted: #98a3b4; --accent: #5cc0cf; --accent-ink: #0c1820; --accent-soft: #173a41;
+  --hi: #ff9b86; --hi-soft: #4a211a; --mid: #f0c060; --mid-soft: #453410; --lo: #86d09a; --lo-soft: #1b3a25;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12161d; --surface: #1a2029; --sunk: #232a35; --line: #343d4b;
+  --ink: #e6eaf0; --muted: #98a3b4; --accent: #5cc0cf; --accent-ink: #0c1820; --accent-soft: #173a41;
+  --hi: #ff9b86; --hi-soft: #4a211a; --mid: #f0c060; --mid-soft: #453410; --lo: #86d09a; --lo-soft: #1b3a25;
+  color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 18px 40px; display: grid; gap: 14px }
+h1 { font: 600 24px/1.15 var(--display); margin: 0; letter-spacing: .01em }
+h2 { font: 600 12px/1.2 var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 }
+p { margin: 0 }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
+button { font: inherit; color: inherit; cursor: pointer }
+button:focus-visible, input:focus-visible, .row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+.top { display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: baseline; justify-content: space-between }
+.top p { color: var(--muted); max-width: 62ch }
+.notice { background: var(--mid-soft); color: var(--ink); border-left: 3px solid var(--mid); padding: 9px 12px; font-size: 13px }
+.notice b { font-weight: 600 }
+
+.stats { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 13px; color: var(--muted) }
+.stats b { color: var(--ink); font-weight: 600; font-family: var(--mono) }
+
+.desk { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 14px; align-items: start }
+@media (max-width: 860px) { .desk { grid-template-columns: minmax(0, 1fr) } }
+
+.queue { background: var(--surface); border: 1px solid var(--line); min-width: 0 }
+.qhead { padding: 10px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 8px }
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { border: 1px solid var(--line); background: transparent; padding: 3px 9px; border-radius: 99px; font-size: 12px }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink) }
+#find { width: 100%; padding: 6px 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 13px var(--mono) }
+.list { max-height: 68vh; overflow-y: auto }
+@media (max-width: 860px) { .list { max-height: 260px } }
+.row { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%;
+  padding: 8px 12px; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left }
+.row:hover { background: var(--sunk) }
+.row[aria-current="true"] { background: var(--accent-soft) }
+.pct { font: 500 13px var(--mono); text-align: right }
+.rid { font: 500 13px var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.rsub { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.tag { font: 500 11px var(--body); padding: 2px 7px; border-radius: 3px; white-space: nowrap }
+.t-esc { background: var(--hi-soft); color: var(--hi) } .t-dis { background: var(--lo-soft); color: var(--lo) }
+.t-info { background: var(--mid-soft); color: var(--mid) } .t-none { color: var(--muted); border: 1px dashed var(--line) }
+.empty { padding: 18px 12px; color: var(--muted) }
+
+.case { background: var(--surface); border: 1px solid var(--line); min-width: 0; display: grid }
+.sec { padding: 14px 16px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; min-width: 0 }
+.sec:last-child { border-bottom: 0 }
+.chead { display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: space-between; align-items: flex-start }
+.chead h1 { font-family: var(--mono); font-size: 20px; font-weight: 500 }
+.meta { color: var(--muted); font-size: 13px }
+.rules { display: grid; gap: 4px; padding: 0; margin: 0; list-style: none; font-size: 13px }
+.rules code { font: 500 12px var(--mono); color: var(--accent) }
+
+.scores { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px }
+.score { display: grid; gap: 5px; min-width: 0 }
+.score .v { font: 500 26px/1 var(--mono) } .score .v small { font-size: 13px; color: var(--muted); font-weight: 400 }
+.bar { height: 6px; background: var(--sunk); position: relative }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--accent) }
+.bar.agent i { background: var(--muted) }
+.cap { font-size: 12px; color: var(--muted) }
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 18px }
+.fact { min-width: 0 } .fact dt { font-size: 12px; color: var(--muted) } .fact dd { margin: 0; font: 500 14px var(--mono); overflow-wrap: anywhere }
+dl { margin: 0 }
+
+.flow { overflow-x: auto } .flow svg { display: block; min-width: 520px; width: 100%; height: auto }
+.flow text { font: 11px var(--mono); fill: var(--ink) } .flow .dim { fill: var(--muted) }
+.flow line { stroke: var(--line); stroke-width: 1.2 } .flow rect { fill: var(--sunk); stroke: var(--line) }
+.flow rect.me { fill: var(--accent-soft); stroke: var(--accent) }
+
+.tbl { overflow-x: auto } table { border-collapse: collapse; width: 100%; font-size: 12.5px; min-width: 520px }
+th { text-align: left; font-weight: 500; color: var(--muted); padding: 4px 10px 4px 0; border-bottom: 1px solid var(--line); white-space: nowrap }
+td { padding: 4px 10px 4px 0; border-bottom: 1px solid var(--line); font-family: var(--mono); white-space: nowrap }
+td.num, th.num { text-align: right } tr.self td { color: var(--accent) }
+
+.narr { max-width: 70ch } .ev { margin: 0; padding-left: 18px; display: grid; gap: 4px; max-width: 74ch }
+.linked { display: flex; flex-wrap: wrap; gap: 6px } .linked span { font: 12px var(--mono); background: var(--sunk); padding: 2px 6px }
+
+.decide { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.btn { border: 1px solid var(--line); background: var(--bg); padding: 7px 14px; font-weight: 500 }
+.btn:hover { border-color: var(--ink) }
+.btn[aria-pressed="true"].b-esc { background: var(--hi); border-color: var(--hi); color: var(--surface) }
+.btn[aria-pressed="true"].b-dis { background: var(--lo); border-color: var(--lo); color: var(--surface) }
+.btn[aria-pressed="true"].b-info { background: var(--mid); border-color: var(--mid); color: var(--surface) }
+.answer { font-size: 13px; padding: 8px 12px; background: var(--sunk) } .answer b { font-weight: 600 }
+.toggle { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted) }
+footer { color: var(--muted); font-size: 12px; max-width: 80ch }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>AML Sentinel Case Desk</h1>
+      <p>Alerts the scoring model sent for review, each with the AI agent's case file. You make the decision.</p>
+    </div>
+    <label class="toggle"><input type="checkbox" id="reveal"> Show benchmark answer after I decide</label>
+  </div>
+
+  <div class="notice" id="notice"></div>
+  <div class="stats" id="stats"></div>
+
+  <div class="desk">
+    <section class="queue" aria-label="Alert queue">
+      <div class="qhead">
+        <h2>Queue, highest model score first</h2>
+        <div class="chips" id="chips"></div>
+        <input id="find" type="search" placeholder="Find account or alert, e.g. A141953" aria-label="Find account or alert">
+      </div>
+      <div class="list" id="list"></div>
+    </section>
+    <article class="case" id="case" aria-live="polite"></article>
+  </div>
+
+  <footer>Data: IBM Transactions for Anti Money Laundering, HI-Small (Altman et al., NeurIPS 2023), held-out test days 8 to 10 September 2022. Synthetic benchmark data; no real customers. Decisions you make here are stored only in this browser.</footer>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const C = DATA.cases, F = DATA.facts, byId = Object.fromEntries(C.map(c => [c.id, c]));
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+const usd = n => "$" + Math.round(n).toLocaleString("en-US");
+const LABEL = { escalate: "Escalate", dismiss: "Dismiss", info: "Need more" };
+
+let decisions = {}, reveal = false, filter = "all", current = C[0].id, query = "";
+try { decisions = JSON.parse(localStorage.getItem("sentinel-decisions") || "{}"); reveal = localStorage.getItem("sentinel-reveal") === "1" } catch (e) {}
+const save = () => { try { localStorage.setItem("sentinel-decisions", JSON.stringify(decisions)); localStorage.setItem("sentinel-reveal", reveal ? "1" : "0") } catch (e) {} };
+
+const FILTERS = [["all", "All"], ["open", "Not decided"], ["flag", "Agent flagged"], ["split", "Model and agent disagree"]];
+const passes = c => (filter === "all" || (filter === "open" && !decisions[c.id]) || (filter === "flag" && c.disp === "escalate")
+  || (filter === "split" && ((c.pct >= 70 && c.disp === "dismiss") || (c.pct < 40 && c.disp === "escalate"))))
+  && (!query || (c.acct + " " + c.id).toLowerCase().includes(query));
+
+function renderTop() {
+  $("notice").innerHTML = `<b>Demo sample.</b> ${F.sample} alerts from a review band of ${F.band.toLocaleString()}. ` +
+    `${F.sample_true} of them are genuine, a higher share than in the real queue (about 1 in 7), so both kinds are well represented. ` +
+    `In testing the model ranked alerts better than the agent (AUC ${F.auc_model.toFixed(2)} against ${F.auc_agent.toFixed(2)}), ` +
+    `so the queue follows the model and the agent's score is shown for reference.`;
+  const done = Object.keys(decisions).filter(k => byId[k]);
+  const right = done.filter(k => decisions[k] !== "info" && (decisions[k] === "escalate") === !!byId[k].truth).length;
+  const judged = done.filter(k => decisions[k] !== "info").length;
+  $("stats").innerHTML = `<span>Reviewed <b>${done.length}</b> of <b>${C.length}</b></span>` +
+    `<span>Escalated <b>${done.filter(k => decisions[k] === "escalate").length}</b></span>` +
+    `<span>Dismissed <b>${done.filter(k => decisions[k] === "dismiss").length}</b></span>` +
+    (reveal && judged ? `<span>Matches benchmark label <b>${right}</b> of <b>${judged}</b></span>` : "");
+  $("chips").innerHTML = FILTERS.map(([k, t]) => `<button class="chip" data-f="${k}" aria-pressed="${filter === k}">${t}</button>`).join("");
+}
+
+function renderList() {
+  const rows = C.filter(passes);
+  $("list").innerHTML = rows.length ? rows.map(c => {
+    const d = decisions[c.id];
+    const tag = d ? `<span class="tag t-${d === "escalate" ? "esc" : d === "dismiss" ? "dis" : "info"}">${LABEL[d]}</span>` : `<span class="tag t-none">Open</span>`;
+    return `<button class="row" data-id="${c.id}" aria-current="${c.id === current}">
+      <span class="pct" title="Model score percentile">${c.pct}</span>
+      <span style="min-width:0"><div class="rid">${c.acct}</div><div class="rsub">${c.rules.join(" ")} · agent ${c.risk}${c.disp === "escalate" ? " · flagged" : ""}</div></span>${tag}</button>`;
+  }).join("") : `<div class="empty">No alerts match. Clear the search or choose "All".</div>`;
+}
+
+function flow(c) {
+  const ins = [], outs = [], seenI = new Set(), seenO = new Set();
+  c.pay.forEach(p => {
+    if (p.to === c.acct && !seenI.has(p.from)) { seenI.add(p.from); ins.push(p) }
+    if (p.from === c.acct && !seenO.has(p.to)) { seenO.add(p.to); outs.push(p) }
+  });
+  if (!ins.length && !outs.length) return "";
+  const cap = 7, L = ins.slice(0, cap), R = outs.slice(0, cap), n = Math.max(L.length, R.length, 1);
+  const rowH = 26, H = n * rowH + 34, W = 640, mid = H / 2, bw = 150, bh = 20;
+  const y = (i, len) => mid - (len - 1) * rowH / 2 + i * rowH;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="First-time payments into and out of ${c.acct}">`;
+  s += `<text class="dim" x="0" y="11">paid in (${ins.length})</text><text class="dim" x="${W}" y="11" text-anchor="end">paid out (${outs.length})</text>`;
+  L.forEach((p, i) => { const yy = y(i, L.length) + 8;
+    s += `<line x1="${bw}" y1="${yy}" x2="${W / 2 - bw / 2}" y2="${mid + 8}"/><rect x="0" y="${yy - bh / 2}" width="${bw}" height="${bh}"/><text x="6" y="${yy + 4}">${p.from} ${usd(p.usd)}</text>` });
+  R.forEach((p, i) => { const yy = y(i, R.length) + 8;
+    s += `<line x1="${W / 2 + bw / 2}" y1="${mid + 8}" x2="${W - bw}" y2="${yy}"/><rect x="${W - bw}" y="${yy - bh / 2}" width="${bw}" height="${bh}"/><text x="${W - bw + 6}" y="${yy + 4}">${p.to} ${usd(p.usd)}</text>` });
+  s += `<rect class="me" x="${W / 2 - bw / 2}" y="${mid + 8 - 13}" width="${bw}" height="26"/><text x="${W / 2}" y="${mid + 12}" text-anchor="middle" font-weight="500">${c.acct}</text>`;
+  const more = [ins.length > cap ? `${ins.length - cap} more senders` : "", outs.length > cap ? `${outs.length - cap} more receivers` : ""].filter(Boolean).join(", ");
+  return `<div class="flow">${s}</svg></div>` + (more ? `<p class="cap">Not drawn: ${more}. All are in the table.</p>` : "");
+}
+
+function renderCase() {
+  const c = byId[current], d = decisions[c.id];
+  const side = (label, x) => `<div class="fact"><dt>${label}</dt><dd>${x.payments} to ${x.parties} ${x.parties === 1 ? "party" : "parties"}, ${usd(x.usd)}</dd></div>`;
+  const rows = c.pay.map(p => `<tr class="${p.from === c.acct || p.to === c.acct ? "self" : ""}"><td>${p.time}</td><td>${p.from}</td><td>${p.to}</td><td class="num">${usd(p.usd)}</td><td>${esc(p.currency)}</td><td>${esc(p.format)}</td></tr>`).join("");
+  const answer = reveal && d && d !== "info" ? `<div class="answer">Benchmark label: <b>${c.truth ? "laundering" : "not laundering"}</b>${c.scheme.length ? ` (${c.scheme.join(", ").toLowerCase()} scheme)` : ""}. ` +
+    `Your decision ${(d === "escalate") === !!c.truth ? "matches" : "does not match"}. The agent ${c.disp === "escalate" ? "flagged" : "dismissed"} it.</div>` : "";
+  $("case").innerHTML = `
+  <div class="sec">
+    <div class="chead"><div><h1>${c.acct}</h1><p class="meta">Alert ${c.id} · raised ${c.date} · review window ${c.win}</p></div>
+      <span class="tag ${c.disp === "escalate" ? "t-esc" : "t-dis"}">Agent recommends: ${c.disp}${c.status === "failsafe" ? " (fail-safe)" : ""}</span></div>
+    <ul class="rules">${c.rules.map(r => `<li><code>${r}</code> ${esc(DATA.rules[r] || "")}</li>`).join("")}</ul>
+  </div>
+  <div class="sec">
+    <div class="scores">
+      <div class="score"><h2>Scoring model</h2><div class="v">${c.pct}<small> percentile</small></div><div class="bar"><i style="width:${c.pct}%"></i></div>
+        <p class="cap">Scores higher than ${c.pct}% of that day's review alerts. This is the ranking the queue uses.</p></div>
+      <div class="score"><h2>Agent risk estimate</h2><div class="v">${c.risk}<small> of 100</small></div><div class="bar agent"><i style="width:${c.risk}%"></i></div>
+        <p class="cap">${c.typ === "none" ? "No scheme type named" : "Scheme type named: " + esc(c.typ.replace(/_/g, " "))}. ${c.tools} tool ${c.tools === 1 ? "call" : "calls"}. Less reliable than the model in testing.</p></div>
+    </div>
+  </div>
+  <div class="sec">
+    <h2>Activity in the window</h2>
+    <dl class="facts">
+      ${side("First-time payments made", c.made)}${side("First-time payments received", c.recv)}
+      <div class="fact"><dt>Currencies paid out (first-time)</dt><dd>${c.made.currencies.length ? esc(c.made.currencies.join(", ")) : "none"}</dd></div>
+      <div class="fact"><dt>Largest first-time payment made</dt><dd>${usd(c.made.largest_usd)}</dd></div>
+      <div class="fact"><dt>All payments in window</dt><dd>${c.all.payments_made} made, ${c.all.payments_received} received</dd></div>
+      <div class="fact"><dt>Share that are first-time</dt><dd>${Math.round(c.share * 100)}%</dd></div>
+      <div class="fact"><dt>Before the window</dt><dd>${c.hist.payments} payments over ${c.hist.days_of_data} days</dd></div>
+      <div class="fact"><dt>Accounts reached within 3 hops</dt><dd>${c.reach}</dd></div>
+    </dl>
+  </div>
+  ${c.pay.length ? `<div class="sec"><h2>Money along first-time relationships</h2>${flow(c)}
+    <div class="tbl"><table><thead><tr><th>Time</th><th>From</th><th>To</th><th class="num">USD</th><th>Currency</th><th>Format</th></tr></thead><tbody>${rows}</tbody></table></div></div>` : ""}
+  <div class="sec">
+    <h2>Agent case file</h2>
+    <p class="narr">${esc(c.narr)}</p>
+    <ul class="ev">${c.ev.map(e => `<li>${esc(e)}</li>`).join("")}</ul>
+    ${c.inn ? `<p class="narr"><span class="cap">Innocent explanation considered:</span> ${esc(c.inn)}</p>` : ""}
+    ${c.linked.length ? `<div><p class="cap">Accounts the agent links to the same scheme</p><div class="linked">${c.linked.map(a => `<span>${a}</span>`).join("")}</div></div>` : ""}
+  </div>
+  <div class="sec">
+    <h2>Your decision</h2>
+    <div class="decide">
+      <button class="btn b-esc" data-d="escalate" aria-pressed="${d === "escalate"}">Escalate</button>
+      <button class="btn b-dis" data-d="dismiss" aria-pressed="${d === "dismiss"}">Dismiss</button>
+      <button class="btn b-info" data-d="info" aria-pressed="${d === "info"}">Need more information</button>
+      <button class="btn" data-next="1">Next open alert</button>
+    </div>
+    ${answer}
+  </div>`;
+}
+
+function render() { renderTop(); renderList(); renderCase() }
+
+$("list").addEventListener("click", e => { const r = e.target.closest(".row"); if (r) { current = r.dataset.id; render(); if (window.innerWidth <= 860) $("case").scrollIntoView({ block: "start" }) } });
+$("chips").addEventListener("click", e => { const b = e.target.closest(".chip"); if (b) { filter = b.dataset.f; renderTop(); renderList() } });
+$("find").addEventListener("input", e => { query = e.target.value.trim().toLowerCase(); renderList() });
+$("reveal").checked = reveal;
+$("reveal").addEventListener("change", e => { reveal = e.target.checked; save(); render() });
+$("case").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.d) { decisions[current] === b.dataset.d ? delete decisions[current] : decisions[current] = b.dataset.d; save(); render() }
+  if (b.dataset.next) { const i = C.findIndex(c => c.id === current); const n = C.slice(i + 1).concat(C.slice(0, i)).find(c => !decisions[c.id]); if (n) { current = n.id; render(); $("case").scrollIntoView({ block: "start" }) } }
+});
+render();
+</script>

@@ -132,6 +132,14 @@ gap before the test (AUC 0.78 against 0.92, then 0.80 against 0.84).
 What this does not show: whether the agent's written case files save an
 investigator time. That needs human raters and is not measured here.
 
+## Investigator review screen
+
+`app/review.html` is a single self-contained page (`python src/build_review_screen.py`
+rebuilds it). It shows the 300 held-out alerts the agent investigated: the queue
+ranked by the scoring model, and for each alert the activity summary, the
+first-time payment flow, the agent's case file, and decision buttons. Benchmark
+labels stay hidden until the viewer asks for them.
+
 ## Results on synthetic sample data (triage agent)
 
 The agent was developed on a synthetic dataset written for this project
@@ -218,6 +226,7 @@ repository secrets.
 - `src/ledger.py`, `tools.py`: read-only data access and the nine investigation tools
 - `src/agent.py`, `models.py`: the agent loop and provider adapters
 - `src/run_agent.py`, `evaluate_agent.py`: run and score the agent
+- `src/build_review_screen.py`, `app/`: the investigator review screen
 - `tests/`: automated tests
 - `docs/`: plain-language walkthrough of each step
 - `results/`: every number quoted above, as produced by the code
@@ -229,5 +238,5 @@ repository secrets.
 3. Triage agent, measured on sample data ✅
 4. IBM benchmark: rules and model baseline ✅
 5. IBM benchmark: agent compared with the model ✅
-6. Investigator review screen showing the agent's case files
+6. Investigator review screen ✅
 7. Packaging: diagram, demo, write-up
