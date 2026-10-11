@@ -137,8 +137,15 @@ investigator time. That needs human raters and is not measured here.
 `app/review.html` is a single self-contained page (`python src/build_review_screen.py`
 rebuilds it). It shows the 300 held-out alerts the agent investigated: the queue
 ranked by the scoring model, and for each alert the activity summary, the
-first-time payment flow, the agent's case file, and decision buttons. Benchmark
-labels stay hidden until the viewer asks for them.
+first-time payment network, the agent's case file and audit trail, and decision
+buttons. A results view carries the measured figures and a workload calculator.
+Benchmark labels stay hidden until the viewer asks for them.
+
+Published as a Claude artifact, the page also runs the agent live: "Investigate
+live" starts a tool-using investigation in the page with each lookup shown as it
+happens, and a question box answers in plain language from the case data. Live
+runs use the same guidance as the tested agent, vary from run to run, and are not
+part of the measured results.
 
 ## Results on synthetic sample data (triage agent)
 

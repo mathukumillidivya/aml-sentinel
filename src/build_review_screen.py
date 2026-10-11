@@ -16,7 +16,7 @@ import pandas as pd
 import ibm_agent_eval as E
 import ibm_data as D
 import ibm_tools as T
-from ibm_agent import RULE_MEANINGS, add_percentiles
+from ibm_agent import RULE_MEANINGS, SYSTEM_PROMPT, add_percentiles
 
 RUN = "ibm-test-haiku"
 STANDOUT = {"out_parties": "first-time parties paid", "out_currencies": "currencies paid out", "out_max_usd": "largest first-time payment made",
@@ -131,6 +131,7 @@ def main():
 
     r, d, m80, m90 = metrics["ranking"], metrics["agent_decision"], model["test"]["keep_80pct_true"], model["test"]["keep_90pct_true"]
     data = {"cases": cases, "rules": RULE_MEANINGS, "others": others,
+            "guidance": SYSTEM_PROMPT.split("How to work")[0].strip(),      # the tested agent's instructions, reused by the live agent
             "types": scheme_breakdown(alerts.reset_index(), ptype, m80["alerts_reviewed"]),
             "curves": {"full": full_curve,
                        "model": curve(alerts.loc[ids].model_score.to_numpy()),

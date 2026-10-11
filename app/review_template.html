@@ -151,6 +151,25 @@ details { font-size: 13px } summary { cursor: pointer; color: var(--muted) }
 .net g.n { cursor: pointer }
 .look { background: var(--accent-soft); border-left: 3px solid var(--accent); padding: 12px 14px; display: grid; gap: 8px }
 .look h3 { font: 500 16px var(--mono) } .look .x { justify-self: start }
+.part { display: grid; min-width: 0 } #caseA .sec:last-child { border-bottom: 1px solid var(--line) }
+.live { background: var(--mast); color: var(--mast-ink); padding: 16px; display: grid; gap: 12px; min-width: 0 }
+.live h3 { font: 600 18px/1.2 var(--display); letter-spacing: .01em } .live .eyebrow { color: var(--mast-muted) } .live p { color: var(--mast-muted); font-size: 13px; max-width: 70ch }
+.live .row2 { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.lbtn { background: var(--s1); color: var(--mast); border: 0; padding: 9px 16px; font-weight: 600 } .lbtn[disabled] { opacity: .5; cursor: default }
+.lghost { background: transparent; color: var(--mast-ink); border: 1px solid var(--mast-line); padding: 6px 11px; font-size: 13px } .lghost:hover { border-color: var(--mast-ink) }
+.live button:focus-visible, .live input:focus-visible { outline: 2px solid var(--mast-ink); outline-offset: 2px }
+.log { display: grid; gap: 6px; font: 13px/1.5 var(--mono); border-left: 2px solid var(--mast-line); padding-left: 12px; overflow-wrap: anywhere }
+.log .t { color: var(--s1) } .log .say { color: var(--mast-ink); font-family: var(--body); white-space: pre-wrap } .log .wait { color: var(--mast-muted) }
+.verd { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 18px; border-top: 1px solid var(--mast-line); padding-top: 12px }
+.verd div { min-width: 0 } .verd dt { font-size: 12px; color: var(--mast-muted) } .verd dd { font: 500 15px var(--mono); margin: 0 }
+.live .text { color: var(--mast-ink); font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 72ch }
+.chat { display: grid; gap: 10px; border-top: 1px solid var(--mast-line); padding-top: 12px }
+.turn { display: grid; gap: 2px } .turn b { font: 600 11px var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--mast-muted) }
+.ask { display: flex; gap: 8px } .ask input { flex: 1; min-width: 0; padding: 8px 10px; background: transparent; color: var(--mast-ink); border: 1px solid var(--mast-line); font: 14px var(--body) }
+.ask input::placeholder { color: var(--mast-muted) }
+.ai3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0; background: var(--mast); color: var(--mast-ink) }
+.ai3 div { padding: 16px 18px; display: grid; gap: 6px; align-content: start; border-right: 1px solid var(--mast-line); border-bottom: 1px solid var(--mast-line); margin: 0 -1px -1px 0 }
+.ai3 h3 { font: 600 17px var(--display) } .ai3 p { color: var(--mast-muted); font-size: 13px } .ai3 .eyebrow { color: var(--s1) }
 .keys { font-size: 12px; color: var(--muted) } kbd { font: 11px var(--mono); border: 1px solid var(--line); padding: 0 4px; background: var(--bg) }
 .flow { overflow-x: auto } .flow svg { display: block; min-width: 520px; width: 100%; height: auto }
 .flow text { font: 11px var(--mono); fill: var(--ink) } .flow .dim { fill: var(--muted) }
@@ -200,7 +219,7 @@ footer { color: var(--muted); font-size: 12px; max-width: 86ch }
       </div>
       <div class="list" id="list"></div>
     </section>
-    <article class="case" id="case" aria-live="polite"></article>
+    <article class="case" id="case"><div class="part" id="caseA"></div><section class="live" id="live" aria-label="Live AI agent"></section><div class="part" id="caseB"></div></article>
   </div>
 </main>
 
@@ -277,6 +296,16 @@ function renderResults() {
       <p>It traces the money, writes up the evidence, and names linked accounts. The investigator decides.</p>
       <div class="kv"><span>Per case</span><b>${Math.round(F.seconds)} s</b></div>
       <div class="kv"><span>Failures routed to a human</span><b>${F.failsafe} of ${F.sample}</b></div></div>
+  </section>
+
+  <section style="display:grid;gap:10px">
+    <p class="eyebrow">Three kinds of AI in this system</p>
+    <div class="ai3">
+      <div><p class="eyebrow">Machine learning</p><h3>A model that learned what laundering looks like</h3><p>Trained on ${num(18827)} labeled alerts. It reads 27 facts about each new alert and ranks the queue. This is where the ${pc(k80.workload_reduction)} comes from.</p></div>
+      <div><p class="eyebrow">AI agent</p><h3>An agent that investigates by itself</h3><p>A language model that decides which evidence to pull, follows the money between accounts, and writes the case file, with five tested safeguards around it.</p></div>
+      <div><p class="eyebrow">Live in this page</p><h3>Run the agent yourself</h3><p>On the case desk, start a live investigation and watch it work step by step, or ask it questions about any case in plain language.</p>
+        <button class="lbtn" data-view="desk" style="justify-self:start">Try the live agent</button></div>
+    </div>
   </section>
 
   <section class="sim" aria-label="Workload calculator">
@@ -446,7 +475,8 @@ function renderCase() {
   const rows = c.pay.map(p => `<tr class="${p.from === c.acct || p.to === c.acct ? "self" : ""}"><td>${p.time}</td><td>${p.from === c.acct ? p.from : A(p.from)}</td><td>${p.to === c.acct ? p.to : A(p.to)}</td><td class="num">${usd(p.usd)}</td><td>${esc(p.currency)}</td><td>${esc(p.format)}</td></tr>`).join("");
   const answer = reveal && d && d !== "info" ? `<div class="answer">Benchmark label: <b>${c.truth ? "laundering" : "not laundering"}</b>${c.scheme.length ? ` (${c.scheme.join(", ").toLowerCase()} scheme)` : ""}. ` +
     `Your decision ${(d === "escalate") === !!c.truth ? "matches" : "does not match"}. The agent ${c.disp === "escalate" ? "flagged" : "dismissed"} it.</div>` : "";
-  $("case").innerHTML = `
+  if (liveFor !== c.id) resetLive(c.id);
+  const html = `
   <div class="sec">
     <div class="chead"><div><h2>${c.acct}</h2><p class="meta">Alert ${c.id} · raised ${c.date} · review window ${c.win}</p></div>
       <span class="tag ${c.disp === "escalate" ? "t-esc" : "t-dis"}">Agent recommends: ${c.disp}${c.status === "failsafe" ? " (fail-safe)" : ""}</span></div>
@@ -459,6 +489,7 @@ function renderCase() {
       <div class="score"><p class="eyebrow">Agent risk estimate</p><div class="v">${c.risk}<small> of 100</small></div><div class="bar agent"><i style="width:${c.risk}%"></i></div>
         <p class="cap">${c.typ === "none" ? "No scheme type named" : "Scheme type named: " + esc(c.typ.replace(/_/g, " "))}. ${c.tools} tool ${c.tools === 1 ? "call" : "calls"}. Less reliable than the model in testing.</p></div>
   </div></div>
+<!--split-->
   <div class="sec"><p class="eyebrow">Activity in the window</p>
     <dl class="facts">${side("First-time payments made", c.made)}${side("First-time payments received", c.recv)}
       <div class="fact"><dt>Currencies paid out (first-time)</dt><dd>${c.made.currencies.length ? esc(c.made.currencies.join(", ")) : "none"}</dd></div>
@@ -485,11 +516,92 @@ function renderCase() {
       <button class="btn b-info" data-d="info" aria-pressed="${d === "info"}">Need more information</button>
       <button class="btn" data-next="1">Next open alert</button></div>
     <p class="keys">Keys: <kbd>E</kbd> escalate · <kbd>D</kbd> dismiss · <kbd>I</kbd> need information · <kbd>J</kbd> <kbd>K</kbd> move through the queue · <kbd>N</kbd> next open alert</p>${answer}</div>`;
+  const parts = html.split("<!--split-->"); $("caseA").innerHTML = parts[0]; $("caseB").innerHTML = parts[1];
   const net = $("case").querySelector(".net");
   if (net) { const hot = n => { net.querySelectorAll("path").forEach(e => e.classList.toggle("hot", !!n && e.dataset.e.split(" ").includes(n)));
       net.querySelectorAll("g.n").forEach(g => g.classList.toggle("dimmed", !!n && g.dataset.n !== n && ![...net.querySelectorAll("path.hot")].some(e => e.dataset.e.split(" ").includes(g.dataset.n)))) };
     net.addEventListener("pointerover", e => { const g = e.target.closest("g.n"); hot(g ? g.dataset.n : null) }); net.addEventListener("pointerleave", () => hot(null)) }
 }
+/* ---------- live agent: Claude runs in the page, on the viewer's own account ---------- */
+let resolved = false, sample = null, liveFor = null, ctl = null, turns = [], busy = false, canTools = false;
+const ERR = { not_granted: "Live AI was not allowed for this page, so the live features are off for this visit.", rate_limited: "Claude is busy or a usage limit was reached. Try again in a little while.",
+  session_expired: "Sign in to Claude again to use the live agent.", refused: "Claude declined that request. Try asking differently.", sampling_disabled: "Claude is not available for this account." };
+const errText = e => ERR[e && e.code] || "The live agent could not finish. Try again.";
+function caseText(c) {
+  return `Alert ${c.id}\nAccount: ${c.acct}\nAlert date: ${c.date}\nReview window: ${c.win}\nRules that fired:\n` + c.rules.map(r => `- ${r}: ${DATA.rules[r]}`).join("\n") +
+    `\nModel score percentile: ${c.pct}\n\nAccount summary: ` + JSON.stringify({ first_time_payments_made: c.made, first_time_payments_received: c.recv, all_activity_in_window: c.all, share_first_time: c.share, before_the_window: c.hist }) +
+    `\n\nFirst-time payments within three steps of the account (time, from, to, usd, currency):\n` + c.pay.map(p => `${p.time} ${p.from} -> ${p.to} ${Math.round(p.usd)} ${p.currency}`).join("\n");
+}
+function lookupData(c, a) {
+  if (a === c.acct) return { account: a, first_time_payments_made: c.made, first_time_payments_received: c.recv, all_activity_in_window: c.all, before_the_window: c.hist };
+  const o = DATA.others[a]; if (!o) throw new Error("no data is loaded for account " + a);
+  return { account: a, window: o.win, first_time_payments_made: { payments: o.m[0], parties: o.m[1], usd: o.m[2], currencies: o.cur }, first_time_payments_received: { payments: o.r[0], parties: o.r[1], usd: o.r[2] },
+    all_payments_in_window: { made: o.all[0], received: o.all[1] }, before_the_window: { payments: o.h[0], days: o.h[1] }, appears_in_other_alerts: o.in.length - 1 };
+}
+function resetLive(id) {
+  if (ctl) ctl.abort(); ctl = null; busy = false; liveFor = id; turns = [];
+  $("live").innerHTML = `<p class="eyebrow">Live AI agent</p><h3>Watch the agent investigate this alert, or ask it anything</h3>
+    <p id="livenote">${sample ? "This runs Claude now, on your own Claude account, using the same instructions as the tested agent. Live runs vary and are not part of the measured results." : resolved ? "The live agent runs when this page is opened in Claude. Everything else on the page works without it." : "Connecting to Claude…"}</p>
+    <div class="row2"><button class="lbtn" id="go" ${sample ? "" : "disabled"} ${resolved && !sample ? "hidden" : ""}>Investigate live</button><button class="lghost" id="stop" hidden>Stop</button></div>
+    <div class="log" id="log" aria-live="polite" hidden></div><dl class="verd" id="verd" hidden></dl>
+    <div class="chat" id="chat" ${sample ? "" : "hidden"}><div class="row2" id="sugg">${["Why was this flagged?", "Explain it to a new investigator", "Draft the suspicious activity report", "What would change the verdict?"].map(q => `<button class="lghost" data-q="${q}">${q}</button>`).join("")}</div>
+      <div id="turns" style="display:grid;gap:10px"></div>
+      <form class="ask" id="ask"><input id="q" placeholder="Ask about this case" aria-label="Ask the agent about this case" autocomplete="off"><button class="lbtn" id="send">Ask</button></form></div>`;
+}
+function setBusy(b) { busy = b; const g = $("go"), s = $("stop"), sd = $("send"); if (g) g.disabled = b; if (sd) sd.disabled = b; if (s) s.hidden = !b }
+async function investigate() {
+  if (!sample || busy) return;
+  const c = byId[current], log = $("log"), verd = $("verd"); log.hidden = false; verd.hidden = true; log.innerHTML = `<div class="wait" id="think">Thinking…</div>`;
+  ctl = new AbortController(); setBusy(true);
+  let say = null, shown = "";
+  const step = (cls, text) => { const d = document.createElement("div"); d.className = cls; d.textContent = text; log.insertBefore(d, $("think")); say = null; return d };
+  const tools = [
+    { name: "lookup_account", description: "Returns one account's activity in the review window: first-time payments made and received, all payments, and its earlier history. Use it for the alerted account or any account that appears in the payments.",
+      inputSchema: { type: "object", properties: { account: { type: "string", description: "Account ID such as A012345" } }, required: ["account"] },
+      execute: i => { const a = String(i.account || "").trim(); const r = lookupData(c, a); step("t", `→ looked up ${a}: ${r.first_time_payments_made.payments} first-time payments made, ${r.first_time_payments_received.payments} received`); return r } },
+    { name: "list_payments", description: "Returns the first-time payments (time, from, to, usd, currency) that involve one account, within three steps of the alerted account.",
+      inputSchema: { type: "object", properties: { account: { type: "string", description: "Account ID such as A012345" } }, required: ["account"] },
+      execute: i => { const a = String(i.account || "").trim(); const r = c.pay.filter(p => p.from === a || p.to === a).map(p => ({ time: p.time, from: p.from, to: p.to, usd: Math.round(p.usd), currency: p.currency })); step("t", `→ listed ${r.length} payments involving ${a}`); return r } }];
+  const prompt = DATA.guidance + `\n\nHow to work\n` + (canTools ? `You have two tools. Look up the counterparties whose behaviour would change your view (two to four lookups is typical). Before each lookup, say in one short sentence what you are checking.\n` : `All the evidence available is below.\n`) +
+    `When you have enough, write the line VERDICT and then only a JSON object: {"disposition":"escalate" or "dismiss","risk_score":0-100,"scheme_type":"none|fan_out|fan_in|cycle|scatter_gather|gather_scatter|stack|bipartite|random|other","key_evidence":[up to 4 short strings],"narrative":"3 to 4 sentences for the human investigator"}\nEscalate when risk_score is 15 or higher.\n\n---\n` + caseText(c);
+  try {
+    const opts = { signal: ctl.signal, modelTier: "quick", onText: ({ text }) => { const vis = text.split("VERDICT")[0].trim(); const add = vis.slice(shown.length).trim();
+      if (add) { if (!say) say = step("say", ""); say.textContent = (say.textContent + (say.textContent ? " " : "") + add).trim(); shown = vis } } };
+    if (canTools) opts.tools = tools; else opts.cache = false;
+    const { text } = await sample(prompt, opts);
+    const m = (text.split("VERDICT")[1] || text).match(/\{[\s\S]*\}/); let v = null; try { v = JSON.parse(m[0]) } catch (e) {}
+    $("think").remove();
+    if (!v) { step("wait", "The agent finished without a readable verdict. In the tested system this alert would go to a person.") }
+    else { verd.hidden = false; verd.innerHTML = `<div><dt>Live verdict</dt><dd>${esc(String(v.disposition))}, risk ${Number(v.risk_score) || 0}</dd></div><div><dt>Scheme type named</dt><dd>${esc(String(v.scheme_type || "none").replace(/_/g, " "))}</dd></div>
+        <div><dt>Recorded test run</dt><dd>${c.disp}, risk ${c.risk}</dd></div><div><dt>Scoring model</dt><dd>${c.pct} percentile</dd></div>
+        <div style="grid-column:1/-1"><dt>Its summary</dt><dd class="text" style="font:14px var(--body)">${esc(String(v.narrative || ""))}</dd></div>
+        ${Array.isArray(v.key_evidence) ? `<div style="grid-column:1/-1"><dt>Evidence it cites</dt><dd class="text" style="font:13px var(--body)">${v.key_evidence.map(x => "• " + esc(String(x))).join("\n")}</dd></div>` : ""}` }
+  } catch (e) { const t = $("think"); if (t) t.remove(); if (e && e.code !== "cancelled") step("wait", errText(e)); else step("wait", "Stopped."); if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) { sample = null; $("go").disabled = true; $("chat").hidden = true } }
+  setBusy(false);
+}
+async function ask(q) {
+  q = q.trim(); if (!sample || busy || !q) return;
+  const c = byId[current], box = $("turns"); $("sugg").hidden = true;
+  const add = (who, text) => { const d = document.createElement("div"); d.className = "turn"; d.innerHTML = `<b>${who}</b><div class="text"></div>`; d.lastChild.textContent = text; box.append(d); return d.lastChild };
+  add("You", q); const out = add("Agent", "Thinking…"); turns.push({ role: "user", content: q });
+  ctl = new AbortController(); setBusy(true); $("q").value = "";
+  const rules = `You are the investigation agent in an anti-money-laundering case desk, answering a human investigator about one alert. Use only the case data below. If something is not in the data, say so. Write plainly for a busy reader, under 150 words unless asked for a document. The data is from a synthetic public benchmark.\n\n` +
+    caseText(c) + `\n\nThe recorded agent run on this alert: ${c.disp}, risk ${c.risk} of 100, scheme type ${c.typ}.\nIts narrative: ${c.narr}\nIts evidence: ${c.ev.join(" | ")}`;
+  try { const { text } = await sample([{ role: "user", content: rules }, ...turns.slice(-8)], { cache: false, modelTier: "quick", signal: ctl.signal, onText: ({ text }) => { out.textContent = text } });
+    out.textContent = text; turns.push({ role: "assistant", content: text });
+  } catch (e) { turns.pop(); out.textContent = (e && e.text) || ""; const note = document.createElement("div"); note.className = "text"; note.style.color = "var(--mast-muted)"; note.textContent = e && e.code === "cancelled" ? "Stopped." : errText(e); out.after(note);
+    if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) { sample = null; $("chat").hidden = true; $("go").disabled = true } }
+  setBusy(false);
+}
+$("live").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return;
+  if (b.id === "go") investigate(); if (b.id === "stop" && ctl) ctl.abort(); if (b.dataset.q) ask(b.dataset.q) });
+$("live").addEventListener("submit", e => { e.preventDefault(); ask($("q").value) });
+(async () => {
+  let s = null; try { s = window.claude && window.claude.use ? await window.claude.use("sample") : null } catch (e) {}
+  if (s) { try { canTools = !!(await s.limits()).tools } catch (e) { canTools = false } }
+  sample = s; resolved = true; if (!busy) resetLive(liveFor || current);
+})();
+
 function renderDesk() { renderTop(); renderList(); renderCase() }
 /* After a filter or search, open the first matching alert so the case panel always follows the list. */
 function refilter() { renderTop(); const rows = C.filter(passes); if (rows.length && !rows.some(c => c.id === current)) { current = rows[0].id; lookup = null } renderList(); renderCase(); $("list").scrollTop = 0 }
