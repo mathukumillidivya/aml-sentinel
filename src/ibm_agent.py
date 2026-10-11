@@ -102,7 +102,17 @@ what they should check first.
 """
 
 
-def case_file(L: T.IBMLedger, alert_id: str, account: str, date: str, rules: str, percentile: float) -> str:
+RETRIEVAL_NOTE = """
+Similar past cases
+The case file ends with the past alerts most like this one and how each turned out. Treat the share \
+confirmed among them as your starting estimate for risk_score: it reflects what actually happened to \
+alerts with this profile. Then move up or down from it only for specific evidence in this case that \
+the similar cases would not capture, and say what that evidence is.
+"""
+
+
+def case_file(L: T.IBMLedger, alert_id: str, account: str, date: str, rules: str, percentile: float,
+              similar: dict | None = None) -> str:
     fired = "\n".join(f"- {r}: {RULE_MEANINGS.get(r, 'unknown rule')}" for r in rules.split("|"))
     summary = T.account_summary(L, account, date)
     payments = T.list_first_time_payments(L, account, date, limit=15)
@@ -110,7 +120,8 @@ def case_file(L: T.IBMLedger, alert_id: str, account: str, date: str, rules: str
             f"Model score percentile: {percentile:.0f} (this alert scores higher than {percentile:.0f}% of "
             "the alerts sent for review that day)\n\n"
             f"Case file\nAccount summary:\n{json.dumps(summary)}\n\nFirst-time payments:\n{json.dumps(payments)}\n\n"
-            "Investigate this alert and submit your verdict.")
+            + (f"Similar past cases:\n{json.dumps(similar)}\n\n" if similar else "")
+            + "Investigate this alert and submit your verdict.")
 
 
 class IBMMockClient:
@@ -149,12 +160,19 @@ def main():
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--token-budget", type=int, default=5_000_000)
     ap.add_argument("--run-id", default=None)
+    ap.add_argument("--retrieval", action="store_true", help="show the agent similar past cases and their outcomes")
     args = ap.parse_args()
 
     client = IBMMockClient() if args.provider == "mock" else make_client(args.provider, args.model or None)
     L = T.IBMLedger.load()
     alerts = add_percentiles(pd.read_parquet("results/ibm/alert_scores.parquet"))
     chosen = sample_alerts(alerts, args.split, args.n_true, args.n_false, args.seed)
+    library = None
+    if args.retrieval:
+        from ibm_cases import CaseLibrary
+        feats = pd.read_parquet("results/ibm/alert_features.parquet").drop(columns="alert_id")
+        library = CaseLibrary(alerts, feats)
+    system = SYSTEM_PROMPT + (RETRIEVAL_NOTE if args.retrieval else "")
     todo = [{"alert_id": r.alert_id, "account": T.acct_name(r.a), "date": T.date_of(r.day), "rules": r.rules,
              "percentile": float(r.percentile)} for r in chosen.itertuples()]      # labels dropped here
 
@@ -163,9 +181,10 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
 
     def work(a):
-        msg = case_file(L, a["alert_id"], a["account"], a["date"], a["rules"], a["percentile"])
+        msg = case_file(L, a["alert_id"], a["account"], a["date"], a["rules"], a["percentile"],
+                        library.similar(a["alert_id"]) if library else None)
         return investigate(client, L, a["alert_id"], a["account"], a["date"], a["rules"], tools=T,
-                           system_prompt=SYSTEM_PROMPT, first_message=msg, typologies=TYPOLOGIES,
+                           system_prompt=system, first_message=msg, typologies=TYPOLOGIES,
                            escalate_at=ESCALATE_AT)
 
     t0, verdicts, used, skipped = time.time(), [], 0, 0
@@ -191,7 +210,7 @@ def main():
         "run_id": run_id, "provider": client.provider, "model": client.model, "split": args.split, "seed": args.seed,
         "requested": len(todo), "completed": len(verdicts), "skipped_for_budget": skipped,
         "band_alerts": len(pool_), "band_true_alerts": int(pool_.is_true_alert.sum()),
-        "escalate_at": ESCALATE_AT, "wall_seconds": round(time.time() - t0, 1)}, indent=2))
+        "escalate_at": ESCALATE_AT, "retrieval": bool(args.retrieval), "wall_seconds": round(time.time() - t0, 1)}, indent=2))
     print(f"run saved to {out}")
 
 

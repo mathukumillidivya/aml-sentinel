@@ -246,3 +246,46 @@ def test_case_file_check_flags_an_account_and_a_figure_that_were_never_shown():
 
 def test_thousands_separators_in_shown_text_are_one_number():
     assert 10000.0 in Fa.numbers_in("a first-time payment of $10,000 or more") and 1234567.0 in Fa.numbers_in("1,234,567")
+
+
+# ---------- case library (retrieval) ----------
+from ibm_cases import CaseLibrary  # noqa: E402
+
+
+def _library():
+    rng = np.random.default_rng(0)
+    n = 80
+    alerts = pd.DataFrame({"alert_id": [f"IB{i}" for i in range(n)], "a": [i // 2 for i in range(n)],
+                           "split": ["dev"] * 60 + ["test"] * 20, "is_true_alert": 0})
+    feats = pd.DataFrame(rng.uniform(0, 5, (n, 3)), columns=["out_parties", "out_currencies", "out_max_usd"])
+    for c in ("in_parties", "history_transactions"):
+        feats[c] = 1.0
+    alerts.loc[60:, "is_true_alert"] = 1          # every TEST alert is laundering; no dev alert is
+    return CaseLibrary(alerts, feats), alerts
+
+
+def test_library_never_returns_test_period_outcomes():
+    lib, alerts = _library()
+    for aid in alerts.alert_id[60:]:
+        r = lib.similar(aid)
+        assert r["confirmed_laundering"] == 0 and r["share_confirmed_among_all_past_alerts"] == 0.0
+
+
+def test_library_leaves_out_the_same_account_for_development_queries():
+    rng = np.random.default_rng(1)
+    n = 60
+    alerts = pd.DataFrame({"alert_id": [f"IB{i}" for i in range(n)], "a": [0, 0] + list(range(1, n - 1)),
+                           "split": "dev", "is_true_alert": [0, 1] + [0] * (n - 2)})
+    feats = pd.DataFrame(rng.uniform(0, 5, (n, 3)), columns=["out_parties", "out_currencies", "out_max_usd"])
+    feats.iloc[1] = feats.iloc[0]                  # IB1: same account, identical profile, and the only confirmed case
+    for c in ("in_parties", "history_transactions"):
+        feats[c] = 1.0
+    r = CaseLibrary(alerts, feats).similar("IB0")
+    assert r["similar_past_cases"] == 25 and r["confirmed_laundering"] == 0     # neither itself nor its twin came back
+
+
+def test_case_file_includes_similar_cases_only_when_given():
+    L, _ = ibm_ledger(RING, minutes=[10, 5800, 5900, 7300])
+    plain = A.case_file(L, "IB1", "A000001", "2022-09-05", "N3", 80.0)
+    withc = A.case_file(L, "IB1", "A000001", "2022-09-05", "N3", 80.0, {"similar_past_cases": 25, "confirmed_laundering": 9})
+    assert "Similar past cases" not in plain and '"confirmed_laundering": 9' in withc

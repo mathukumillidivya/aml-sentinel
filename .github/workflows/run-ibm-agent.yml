@@ -19,6 +19,10 @@ on:
         default: "20"
       seed:
         default: "11"
+      retrieval:
+        description: Show the agent similar past cases
+        type: boolean
+        default: false
       token_budget:
         default: "3000000"
       run_id:
@@ -41,6 +45,7 @@ jobs:
       N_FALSE: ${{ inputs.n_false }}
       SEED: ${{ inputs.seed }}
       TOKEN_BUDGET: ${{ inputs.token_budget }}
+      RETRIEVAL: ${{ inputs.retrieval && '--retrieval' || '' }}
       RUN_ID: ${{ inputs.run_id || format('{0}-{1}-run{2}', inputs.provider, inputs.split, github.run_number) }}
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +62,7 @@ jobs:
           git reset -q
       - run: python -m pytest -q tests
       - name: Investigate alerts
-        run: python src/ibm_agent.py --provider "$PROVIDER" --model "$MODEL" --split "$SPLIT" --n-true "$N_TRUE" --n-false "$N_FALSE" --seed "$SEED" --token-budget "$TOKEN_BUDGET" --run-id "$RUN_ID"
+        run: python src/ibm_agent.py --provider "$PROVIDER" --model "$MODEL" --split "$SPLIT" --n-true "$N_TRUE" --n-false "$N_FALSE" --seed "$SEED" --token-budget "$TOKEN_BUDGET" --run-id "$RUN_ID" $RETRIEVAL
       - name: Score against ground truth
         run: python src/ibm_agent_eval.py --run "$RUN_ID"
       - name: Save results to the repository
