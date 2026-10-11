@@ -38,7 +38,7 @@ def load(path: str = "data/ibm_prepared"):
     sender and receiver, judged only from earlier days, so no future information is used)."""
     p = Path(path)
     meta = json.loads((p / "meta.json").read_text())
-    tx = pd.read_parquet(p / "tx.parquet")
+    tx = pd.concat([pd.read_parquet(f) for f in sorted(p.glob("tx*.parquet"))], ignore_index=True)
     tx["day"] = (tx.minute // 1440).astype("int16")
     n_tail = int((tx.day >= MAIN_DAYS).sum())
     tx = tx[tx.day < MAIN_DAYS]

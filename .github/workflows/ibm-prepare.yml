@@ -16,6 +16,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       NAME: ${{ inputs.name }}
       DATASET: ealtman2019/ibm-transactions-for-anti-money-laundering-aml
+      BRANCH: ${{ inputs.name == 'HI-Small' && 'ibm-cache' || format('ibm-cache-{0}', inputs.name) }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -37,12 +38,12 @@ jobs:
           done
           cd data/ibm && for z in *.zip; do [ -f "$z" ] && unzip -o "$z" && rm "$z"; done; ls -la
       - run: python src/ibm_prepare.py --name "$NAME"
-      - name: Publish prepared data to the ibm-cache branch
+      - name: Publish prepared data to its cache branch
         run: |
           cd data/ibm_prepared
           find . -size +95M | grep . && { echo "file too large for GitHub"; exit 1; }
-          git init -q -b ibm-cache
+          git init -q -b "$BRANCH"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add . && git commit -qm "Prepared IBM $NAME data (derived from the public dataset, CDLA-Sharing-1.0)"
-          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}" ibm-cache
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}" "$BRANCH"

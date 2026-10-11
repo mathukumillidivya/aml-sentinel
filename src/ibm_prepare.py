@@ -98,7 +98,12 @@ def main():
         "pattern_id": tx.pattern_id.fillna(-1).astype("int16").to_numpy(),
         "pattern_type": tx.pattern_type.map({c: i for i, c in enumerate(type_names)}).fillna(-1).astype("int8").to_numpy(),
     }).sort_values("minute", kind="stable").reset_index(drop=True)
-    prepared.to_parquet(out / "tx.parquet", compression="zstd", compression_level=19, index=False)
+    part = 4_500_000                    # keep each file under GitHub's 100 MB limit
+    if len(prepared) <= part:
+        prepared.to_parquet(out / "tx.parquet", compression="zstd", compression_level=19, index=False)
+    else:
+        for i, lo in enumerate(range(0, len(prepared), part)):
+            prepared.iloc[lo:lo + part].to_parquet(out / f"tx-{i}.parquet", compression="zstd", compression_level=19, index=False)
     pd.DataFrame({"account": names}).to_parquet(out / "accounts.parquet", compression="zstd", index=False)
 
     meta = {
