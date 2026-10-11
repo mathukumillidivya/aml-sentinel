@@ -9,7 +9,8 @@ days of the public IBM AML benchmark.
 **Headline findings**
 
 - Rules plus a small scoring model cut the alert workload by 73% while keeping
-  80% of true alerts.
+  80% of true alerts. On a second dataset, with nothing re-tuned, the cut is 68%,
+  and the first dataset's model applied unchanged gives 67%.
 - The agent does not improve on that model as a scorer. On 300 held-out alerts
   its ranking was worse (AUC 0.68 against 0.81), and averaging the two was worse
   than the model alone. A stronger model did not change this.
@@ -92,7 +93,28 @@ Dataset quirks handled, each of which would otherwise inflate results:
 Limits: these are alert-level results on accounts, so they are not comparable with
 the transaction-level F1 scores in the graph-neural-network literature. 23% of
 laundering transactions never reach an alerted account, and the model cannot recover
-what the rules miss. HI-Small is one of six IBM variants.
+what the rules miss. Two of the six IBM variants are covered.
+
+### Replication on a second dataset (LI-Small)
+
+`src/ibm_replicate.py` runs the identical pipeline on LI-Small (6.92M
+transactions, laundering about 1 in 1,700, 117 labeled schemes): same rules,
+features, model settings, and time split, with nothing re-tuned. It also applies
+the model trained on HI-Small, unchanged, to LI-Small's test days.
+
+| Held-out test days | Alerts | False alarms | AUC | Workload cut keeping 80% | Keeping 90% |
+|---|---|---|---|---|---|
+| HI-Small | 20,784 | 93.5% | 0.896 | 73% | 60% |
+| LI-Small, model trained on LI-Small | 27,297 | 96.6% | 0.840 | 68% | 61% |
+| LI-Small, payment-format features removed | 27,297 | 96.6% | 0.837 | 67% | 61% |
+| LI-Small, HI-Small's model applied unchanged | 27,297 | 96.6% | 0.829 | 67% | 58% |
+
+On LI-Small the rules reach 63% of laundering transactions (77% on HI-Small),
+and 221 of 245 true alerts from labeled schemes fall in the alerts read first
+(768 of 786 on HI-Small). The result holds, at a somewhat lower level, and the
+model transfers between datasets with little loss. Both datasets come from the
+same simulator, so this is weaker evidence than a second, independent source
+would be.
 
 ### Does the agent add anything to the model?
 
@@ -234,7 +256,7 @@ mix, with 95% Wilson confidence intervals on every rate.
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests                # 65 tests, no API key needed
+python -m pytest tests                # 66 tests, no API key needed
 
 # synthetic sample pipeline
 python src/generate_data.py
@@ -248,6 +270,7 @@ python src/evaluate_agent.py --run <run_id>
 python src/ibm_prepare.py             # raw CSV -> data/ibm_prepared/
 python src/ibm_rules.py               # results/ibm/rules_baseline.json
 python src/ibm_model.py               # results/ibm/model_baseline.json
+python src/ibm_replicate.py --name LI-Small   # second dataset; needs data/ibm_prepared_LI-Small/
 python src/ibm_agent.py --provider anthropic --split test --n-true 120 --n-false 180
 python src/ibm_agent_eval.py --run <run_id>
 python src/ibm_faithfulness.py --run <run_id>

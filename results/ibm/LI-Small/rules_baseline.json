@@ -1,0 +1,112 @@
+{
+  "protocol": {
+    "tail_rows_dropped": 148,
+    "hub_accounts": 15,
+    "hub_rows_dropped": 614232,
+    "hub_laundering_rows_dropped": 850,
+    "history_days": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "dev_days": [
+      4,
+      5
+    ],
+    "gap_days": [
+      6
+    ],
+    "test_days": [
+      7,
+      8,
+      9
+    ],
+    "review_window": "day-2 .. day+1"
+  },
+  "transactions_scored": 5505192,
+  "laundering_rate": 0.000468,
+  "days_present": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "dev": {
+    "days": [
+      4,
+      5
+    ],
+    "alerts": 25280,
+    "alerts_per_day": 12640,
+    "true_alerts": 667,
+    "false_alerts": 24613,
+    "precision": 0.0264,
+    "false_positive_share": 0.9736,
+    "laundering_transactions": 578,
+    "laundering_transactions_on_alerted_accounts": 369,
+    "laundering_transaction_recall": 0.6384,
+    "schemes": 58,
+    "schemes_touched": 49,
+    "by_rule": {
+      "N1": {
+        "alerts": 2405,
+        "precision": 0.0499
+      },
+      "N2": {
+        "alerts": 22275,
+        "precision": 0.0234
+      },
+      "N3": {
+        "alerts": 1150,
+        "precision": 0.0835
+      },
+      "N4": {
+        "alerts": 33,
+        "precision": 0.5152
+      }
+    }
+  },
+  "test": {
+    "days": [
+      7,
+      8,
+      9
+    ],
+    "alerts": 27297,
+    "alerts_per_day": 9099,
+    "true_alerts": 940,
+    "false_alerts": 26357,
+    "precision": 0.0344,
+    "false_positive_share": 0.9656,
+    "laundering_transactions": 817,
+    "laundering_transactions_on_alerted_accounts": 514,
+    "laundering_transaction_recall": 0.6291,
+    "schemes": 66,
+    "schemes_touched": 56,
+    "by_rule": {
+      "N1": {
+        "alerts": 3415,
+        "precision": 0.0501
+      },
+      "N2": {
+        "alerts": 23116,
+        "precision": 0.0318
+      },
+      "N3": {
+        "alerts": 1413,
+        "precision": 0.0885
+      },
+      "N4": {
+        "alerts": 38,
+        "precision": 0.4474
+      }
+    }
+  }
+}

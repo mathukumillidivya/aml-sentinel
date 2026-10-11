@@ -289,3 +289,14 @@ def test_case_file_includes_similar_cases_only_when_given():
     plain = A.case_file(L, "IB1", "A000001", "2022-09-05", "N3", 80.0)
     withc = A.case_file(L, "IB1", "A000001", "2022-09-05", "N3", 80.0, {"similar_past_cases": 25, "confirmed_laundering": 9})
     assert "Similar past cases" not in plain and '"confirmed_laundering": 9' in withc
+
+
+# ---------- replication on a second dataset ----------
+import ibm_replicate as Rep  # noqa: E402
+
+
+def test_scheme_capture_counts_labeled_and_other_true_alerts_in_the_first_read():
+    alerts = pd.DataFrame({"is_true_alert": [1, 1, 1, 0, 0, 1], "patterns": ["3", "", "4", "", "", ""]})
+    score = np.array([.9, .8, .1, .7, .2, .6])
+    got = Rep.scheme_capture(alerts, score, np.ones(6, bool), top_k=3)      # first read = scores .9, .8, .7
+    assert got == {"labeled_scheme_alerts": 2, "in_top": 1, "other_true_alerts": 2, "other_in_top": 1}

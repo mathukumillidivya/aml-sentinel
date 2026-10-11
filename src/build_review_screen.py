@@ -153,6 +153,8 @@ def main():
                       "labeled": int(((t_ := alerts[(alerts.split == "test") & (alerts.is_true_alert == 1)]).patterns != "").sum()),
                       "labeled_top": int((t_.patterns != "").sum()) - sum(1 for i in t_.index[t_.patterns != ""] if i not in top_ids),
                       "faith": json.loads((run / "faithfulness.json").read_text()),
+                      "li": {"rules": json.loads(Path("results/ibm/LI-Small/rules_baseline.json").read_text())["test"],
+                             "model": json.loads(Path("results/ibm/LI-Small/model_baseline.json").read_text())},
                       "tests": sum(t.read_text().count("\ndef test_") for t in Path("tests").glob("test_*.py"))}}
     template = Path("app/review_template.html").read_text()
     payload = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")

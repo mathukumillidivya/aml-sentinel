@@ -1,0 +1,113 @@
+{
+  "variant": "LI-Small",
+  "trained_on_this_dataset": {
+    "dev_alerts": 25280,
+    "dev_true_alerts": 667,
+    "test": {
+      "alerts": 27297,
+      "true_alerts": 940,
+      "baseline_precision": 0.0344,
+      "auc": 0.8398,
+      "average_precision": 0.2903,
+      "keep_50pct_true": {
+        "alerts_reviewed": 4231,
+        "share_of_alerts": 0.155,
+        "workload_reduction": 0.845,
+        "precision": 0.1111
+      },
+      "keep_80pct_true": {
+        "alerts_reviewed": 8626,
+        "share_of_alerts": 0.316,
+        "workload_reduction": 0.684,
+        "precision": 0.0872
+      },
+      "keep_90pct_true": {
+        "alerts_reviewed": 10562,
+        "share_of_alerts": 0.3869,
+        "workload_reduction": 0.6131,
+        "precision": 0.0801
+      },
+      "keep_95pct_true": {
+        "alerts_reviewed": 12161,
+        "share_of_alerts": 0.4455,
+        "workload_reduction": 0.5545,
+        "precision": 0.0734
+      }
+    },
+    "test_without_payment_format": {
+      "alerts": 27297,
+      "true_alerts": 940,
+      "baseline_precision": 0.0344,
+      "auc": 0.8373,
+      "average_precision": 0.2856,
+      "keep_50pct_true": {
+        "alerts_reviewed": 4110,
+        "share_of_alerts": 0.1506,
+        "workload_reduction": 0.8494,
+        "precision": 0.1144
+      },
+      "keep_80pct_true": {
+        "alerts_reviewed": 8909,
+        "share_of_alerts": 0.3264,
+        "workload_reduction": 0.6736,
+        "precision": 0.0844
+      },
+      "keep_90pct_true": {
+        "alerts_reviewed": 10710,
+        "share_of_alerts": 0.3924,
+        "workload_reduction": 0.6076,
+        "precision": 0.079
+      },
+      "keep_95pct_true": {
+        "alerts_reviewed": 12118,
+        "share_of_alerts": 0.4439,
+        "workload_reduction": 0.5561,
+        "precision": 0.0737
+      }
+    },
+    "schemes_in_first_read": {
+      "labeled_scheme_alerts": 245,
+      "in_top": 221,
+      "other_true_alerts": 695,
+      "other_in_top": 531
+    }
+  },
+  "transferred_from_HI-Small": {
+    "trained_on": {
+      "alerts": 18827,
+      "true_alerts": 865
+    },
+    "test": {
+      "alerts": 27297,
+      "true_alerts": 940,
+      "baseline_precision": 0.0344,
+      "auc": 0.8286,
+      "average_precision": 0.2946,
+      "keep_50pct_true": {
+        "alerts_reviewed": 4388,
+        "share_of_alerts": 0.1608,
+        "workload_reduction": 0.8392,
+        "precision": 0.1071
+      },
+      "keep_80pct_true": {
+        "alerts_reviewed": 9141,
+        "share_of_alerts": 0.3349,
+        "workload_reduction": 0.6651,
+        "precision": 0.0823
+      },
+      "keep_90pct_true": {
+        "alerts_reviewed": 11433,
+        "share_of_alerts": 0.4188,
+        "workload_reduction": 0.5812,
+        "precision": 0.074
+      },
+      "keep_95pct_true": {
+        "alerts_reviewed": 12659,
+        "share_of_alerts": 0.4638,
+        "workload_reduction": 0.5362,
+        "precision": 0.0705
+      }
+    }
+  },
+  "note": "same rules, features, model settings and time split as HI-Small; nothing re-tuned"
+}

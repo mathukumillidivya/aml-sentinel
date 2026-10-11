@@ -177,6 +177,7 @@ details { font-size: 13px } summary { cursor: pointer; color: var(--muted) }
 .tbl { overflow-x: auto } .tbl table { border-collapse: collapse; width: 100%; font-size: 12.5px; min-width: 520px }
 .tbl th { text-align: left; font-weight: 500; color: var(--muted); padding: 4px 10px 4px 0; border-bottom: 1px solid var(--line); white-space: nowrap }
 .tbl td { padding: 4px 10px 4px 0; border-bottom: 1px solid var(--line); font-family: var(--mono); white-space: nowrap }
+.panel .tbl td:first-child { font-family: var(--body) } .panel .tbl td { padding-block: 7px }
 td.num, th.num { text-align: right } tr.self td { color: var(--accent) }
 .sec > * { min-width: 0 } .narr, .ev, .steps, .stand span { overflow-wrap: anywhere }
 .narr { max-width: 70ch } .ev { padding-left: 18px; list-style: disc; display: grid; gap: 4px; max-width: 74ch }
@@ -343,6 +344,17 @@ function renderResults() {
     </div>
   </section>
 
+  <section class="panel">
+    <h3>The result holds on a second dataset the system was never tuned on</h3>
+    <p>The same rules, features, model settings, and time split were run on a second IBM dataset with a lower laundering rate. Nothing was adjusted. The last row applies the model trained on the first dataset, unchanged.</p>
+    <div class="tbl"><table><thead><tr><th>Held-out test days</th><th class="num">Alerts</th><th class="num">False alarms</th><th class="num">Model score (AUC)</th><th class="num">Workload cut, keeping 80% of real cases</th></tr></thead><tbody>
+      <tr><td>First dataset (HI-Small)</td><td class="num">${num(F.alerts)}</td><td class="num">${pc(1 - F.precision, 1)}</td><td class="num">${F.auc_full.toFixed(2)}</td><td class="num">${pc(k80.workload_reduction)}</td></tr>
+      <tr><td>Second dataset (LI-Small)</td><td class="num">${num(F.li.rules.alerts)}</td><td class="num">${pc(1 - F.li.rules.precision, 1)}</td><td class="num">${F.li.model.trained_on_this_dataset.test.auc.toFixed(2)}</td><td class="num">${pc(F.li.model.trained_on_this_dataset.test.keep_80pct_true.workload_reduction)}</td></tr>
+      <tr><td>Second dataset, using the first dataset's model</td><td class="num">${num(F.li.rules.alerts)}</td><td class="num">${pc(1 - F.li.rules.precision, 1)}</td><td class="num">${F.li.model["transferred_from_HI-Small"].test.auc.toFixed(2)}</td><td class="num">${pc(F.li.model["transferred_from_HI-Small"].test.keep_80pct_true.workload_reduction)}</td></tr>
+    </tbody></table></div>
+    <p class="cap">On the second dataset the rules cover ${pc(F.li.rules.laundering_transaction_recall)} of laundering payments, and ${F.li.model.trained_on_this_dataset.schemes_in_first_read.in_top} of ${F.li.model.trained_on_this_dataset.schemes_in_first_read.labeled_scheme_alerts} real alerts from labeled schemes land in the alerts read first.</p>
+  </section>
+
   <section class="sim" aria-label="How faithful the agent's case files are">
     <div class="ctl">
       <p class="eyebrow">What the agent is for</p>
@@ -382,7 +394,7 @@ function renderResults() {
       <li>${pc(1 - F.txn_recall)} of laundering payments never trigger a rule, and nothing later can recover them.</li>
       <li>Whether the agent's case files save an investigator time has not been measured.</li>
       <li>The agent rarely names the right scheme type (7 of 47), and showing it similar past cases did not improve its ranking in a trial.</li>
-      <li>This is one of six IBM benchmark variants, and the data is synthetic.</li>
+      <li>These are two of six IBM benchmark variants, and the data is synthetic.</li>
     </ul>
   </section>
 
