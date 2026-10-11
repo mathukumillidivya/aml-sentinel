@@ -1,0 +1,15 @@
+{
+  "run_id": "ibm-dev3-retrieval",
+  "provider": "anthropic",
+  "model": "claude-haiku-4-5-20251001",
+  "split": "dev",
+  "seed": 29,
+  "requested": 50,
+  "completed": 50,
+  "skipped_for_budget": 0,
+  "band_alerts": 6724,
+  "band_true_alerts": 821,
+  "escalate_at": 15,
+  "retrieval": true,
+  "wall_seconds": 258.2
+}
