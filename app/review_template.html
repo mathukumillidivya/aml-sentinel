@@ -88,6 +88,20 @@ details { font-size: 13px } summary { cursor: pointer; color: var(--muted) }
 .cta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center }
 .go { background: var(--accent); color: var(--accent-ink); border: 0; padding: 10px 18px; font-weight: 600 }
 
+.sim { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 18px 28px; background: var(--surface); border: 1px solid var(--line); padding: 18px }
+@media (max-width: 820px) { .sim { grid-template-columns: minmax(0, 1fr) } }
+.sim h3 { font: 600 20px/1.2 var(--display); text-wrap: balance } .sim .ctl { display: grid; gap: 12px; align-content: start; min-width: 0 }
+.sim label { display: grid; gap: 4px; font-size: 13px; color: var(--muted) } .sim label b { color: var(--ink); font: 500 15px var(--mono) }
+.sim input[type=range] { width: 100%; accent-color: var(--accent) }
+.sim input[type=number] { width: 90px; padding: 5px 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 14px var(--mono) }
+.outs { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px 20px; align-content: start }
+.out { display: grid; gap: 2px; min-width: 0; border-top: 2px solid var(--line); padding-top: 8px } .out.key { border-top-color: var(--accent) }
+.out .n { font: 500 26px/1.1 var(--mono); font-variant-numeric: tabular-nums } .out .l { font-size: 12.5px; color: var(--muted) }
+.presets { display: flex; flex-wrap: wrap; gap: 6px }
+.types { display: grid; gap: 7px } .trow { display: grid; grid-template-columns: minmax(96px, 190px) minmax(0, 1fr) 92px; gap: 10px; align-items: center; font-size: 13px }
+.trow .tb { height: 14px; background: var(--sunk) } .trow .tb i { display: block; height: 100%; background: var(--s1); border-radius: 0 4px 4px 0 }
+.trow .tv { font: 12.5px var(--mono); text-align: right; white-space: nowrap } .trow.other .tb i { background: var(--muted) }
+
 /* case desk */
 .notice { background: var(--mid-soft); border-left: 3px solid var(--mid); padding: 9px 12px; font-size: 13px } .notice b { font-weight: 600 }
 .bar-top { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; justify-content: space-between }
@@ -127,6 +141,12 @@ details { font-size: 13px } summary { cursor: pointer; color: var(--muted) }
 .cap { font-size: 12px; color: var(--muted) }
 .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 18px }
 .fact { min-width: 0 } .fact dt { font-size: 12px; color: var(--muted) } .fact dd { font: 500 14px var(--mono); overflow-wrap: anywhere }
+.stand { display: flex; flex-wrap: wrap; gap: 8px } .stand span { background: var(--sunk); padding: 5px 9px; font-size: 12.5px } .stand b { font: 500 12.5px var(--mono) }
+.steps { display: grid; gap: 6px; padding-left: 22px; list-style: decimal; max-width: 78ch; font-size: 13px } .steps b { font-weight: 600 } .steps code { font: 12px var(--mono); color: var(--accent) } .steps span { color: var(--muted) }
+.flow svg.net { width: auto; min-width: 0; max-width: none }
+.net rect.lk { stroke: var(--s2); stroke-width: 2 } .net path { fill: none; stroke: var(--muted); stroke-width: 1.2; opacity: .55 } .net path.hot { stroke: var(--accent); opacity: 1; stroke-width: 2 }
+.net g.n { cursor: default } .net g.dimmed { opacity: .3 }
+.keys { font-size: 12px; color: var(--muted) } kbd { font: 11px var(--mono); border: 1px solid var(--line); padding: 0 4px; background: var(--bg) }
 .flow { overflow-x: auto } .flow svg { display: block; min-width: 520px; width: 100%; height: auto }
 .flow text { font: 11px var(--mono); fill: var(--ink) } .flow .dim { fill: var(--muted) }
 .flow line { stroke: var(--line); stroke-width: 1.2 } .flow rect { fill: var(--sunk); stroke: var(--line) } .flow rect.me { fill: var(--accent-soft); stroke: var(--accent) }
@@ -209,7 +229,7 @@ function lineChart(host, series, mark) {
   s += `<text x="${X(.5)}" y="${H - 4}" text-anchor="middle">share of alerts a person reads</text>`;
   s += `<line class="ref" x1="${X(0)}" y1="${Y(0)}" x2="${X(1)}" y2="${Y(1)}"/>`;
   series.forEach(se => { s += `<path class="ln" style="stroke:var(${se.c})" d="M${se.pts.map(p => X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join("L")}"/>` });
-  if (mark) s += `<circle class="dot" cx="${X(mark.x)}" cy="${Y(mark.y)}" r="5" style="fill:var(${mark.c})"/><text class="lab" x="${X(mark.x) + 10}" y="${Y(mark.y) + 16}">${mark.t}</text>`;
+  if (mark) s += `<circle class="dot mk" r="5" style="fill:var(${mark.c})"/><text class="lab mk"></text>`;
   s += `<line class="cross" id="${host.id}-x" y1="${Y(0)}" y2="${Y(1)}" x1="0" x2="0" visibility="hidden"/>`;
   host.innerHTML = s + `</svg><div class="tip" hidden></div>`;
   const svg = host.querySelector("svg"), tip = host.querySelector(".tip"), cross = svg.querySelector(".cross");
@@ -221,7 +241,11 @@ function lineChart(host, series, mark) {
   };
   svg.addEventListener("pointermove", move); svg.addEventListener("pointerdown", move);
   svg.addEventListener("pointerleave", () => { tip.hidden = true; cross.setAttribute("visibility", "hidden") });
+  return { mark(x, y, t) { const d = svg.querySelector("circle.mk"), l = svg.querySelector("text.mk");
+    d.setAttribute("cx", X(x)); d.setAttribute("cy", Y(y)); l.textContent = t;
+    const right = x < .6; l.setAttribute("x", X(x) + (right ? 10 : -10)); l.setAttribute("y", Y(y) + 16); l.setAttribute("text-anchor", right ? "start" : "end") } };
 }
+function xAt(pts, y) { for (let i = 1; i < pts.length; i++) if (pts[i][1] >= y) return pts[i][0]; return 1 }
 function renderResults() {
   const k80 = F.keep80, k90 = F.keep90, kept80 = Math.round(F.true_alerts * .8);
   $("view-results").innerHTML = `
@@ -249,6 +273,18 @@ function renderResults() {
       <div class="kv"><span>Failures routed to a human</span><b>${F.failsafe} of ${F.sample}</b></div></div>
   </section>
 
+  <section class="sim" aria-label="Workload calculator">
+    <div class="ctl">
+      <p class="eyebrow">Try it with your own team</p>
+      <h3>How many alerts can your investigators read in a day?</h3>
+      <label>Alerts read per day <b id="capv"></b><input type="range" id="cap" min="100" max="${Math.round(F.alerts / 3)}" step="1" value="${Math.round(k80.alerts_reviewed / 3)}"></label>
+      <div class="presets"><button class="chip" data-keep="0.5">Keep 50%</button><button class="chip" data-keep="0.8">Keep 80%</button><button class="chip" data-keep="0.9">Keep 90%</button><button class="chip" data-keep="0.95">Keep 95%</button></div>
+      <label>Minutes an investigator spends per alert <input type="number" id="mins" min="1" max="240" value="20"></label>
+      <p class="cap">The queue produces about ${num(F.alerts / 3)} alerts a day. Minutes per alert is your assumption; everything else is measured.</p>
+    </div>
+    <div class="outs" id="outs"></div>
+  </section>
+
   <section class="two">
     <div class="panel">
       <h3>The model finds most real cases in the first quarter of the queue</h3>
@@ -270,6 +306,13 @@ function renderResults() {
         <tr><td>AI agent</td><td>${F.auc_agent.toFixed(3)}</td><td>${pc(F.read80_agent)}</td></tr></table>
         <p class="cap">Gap ${F.gap.toFixed(3)}, 95% interval ${F.gap_ci[0].toFixed(3)} to ${F.gap_ci[1].toFixed(3)}. Alerts here come from the review band, so both curves are lower than in the first chart.</p></details>
     </div>
+  </section>
+
+  <section class="panel">
+    <h3>Organised schemes almost never slip past the ranking</h3>
+    <p>Of ${num(F.labeled)} real alerts that belong to a labeled laundering scheme, ${num(F.labeled_top)} (${pc(F.labeled_top / F.labeled)}) land in the ${num(k80.alerts_reviewed)} alerts read first. The misses are mostly one-off laundering payments outside any scheme.</p>
+    <div class="types">${DATA.types.map(t => `<div class="trow${/Labeled/.test(t[0]) ? " other" : ""}" title="${t[2]} of ${t[1]} real alerts of this kind are in the first ${num(k80.alerts_reviewed)} read"><span>${/Labeled/.test(t[0]) ? "Outside any labeled scheme" : esc(t[0])}</span><div class="tb"><i style="width:${t[2] / t[1] * 100}%"></i></div><span class="tv">${t[2]} of ${t[1]}</span></div>`).join("")}</div>
+    <p class="cap">Share of real test-day alerts of each scheme type that fall in the first ${num(k80.alerts_reviewed)} read. An alert can belong to more than one scheme.</p>
   </section>
 
   <section style="display:grid;gap:10px">
@@ -294,7 +337,22 @@ function renderResults() {
 
   <div class="cta"><button class="go" data-view="desk">Open the case desk</button><span class="cap">Work through ${F.sample} benchmark alerts yourself.</span></div>`;
 
-  lineChart($("ch1"), [{ c: "--s1", pts: K.full, short: "model" }], { x: F.keep80.share_of_alerts, y: .8, c: "--s1", t: `80% caught at ${pc(F.keep80.share_of_alerts)} read` });
+  const ch1 = lineChart($("ch1"), [{ c: "--s1", pts: K.full, short: "model" }], { c: "--s1" });
+  const perDay = F.alerts / 3, truePerDay = F.true_alerts / 3;
+  const sim = () => {
+    const cap = +$("cap").value, mins = Math.max(1, +$("mins").value || 20), share = Math.min(1, cap / perDay), kept = yAt(K.full, share);
+    const caught = kept * truePerDay, hrs = cap * mins / 60, all = perDay * mins / 60;
+    $("capv").textContent = num(cap) + " (" + pc(share) + " of the queue)";
+    $("outs").innerHTML = [["key", pc(kept), "of real cases caught"], ["key", pc(1 - share), "fewer alerts to read"],
+      ["", num(caught), "real cases a day reaching an investigator"], ["", num(truePerDay - caught), "real cases a day left unread"],
+      ["", pc(caught / cap, 1), "of alerts read are real (rules alone: " + pc(F.precision, 1) + ")"],
+      ["", num(hrs) + " h", "of reading a day, against " + num(all) + " h to read everything"]]
+      .map(o => `<div class="out ${o[0]}"><div class="n">${o[1]}</div><div class="l">${o[2]}</div></div>`).join("");
+    ch1.mark(share, kept, `${pc(kept)} caught at ${pc(share)} read`);
+  };
+  $("cap").addEventListener("input", sim); $("mins").addEventListener("input", sim);
+  $("view-results").querySelector(".presets").addEventListener("click", e => { const b = e.target.closest("[data-keep]"); if (b) { $("cap").value = Math.ceil(xAt(K.full, +b.dataset.keep) * perDay); sim() } });
+  sim();
   lineChart($("ch2"), [{ c: "--s1", pts: K.model, short: "model" }, { c: "--s2", pts: K.agent, short: "agent" }]);
 }
 
@@ -316,7 +374,7 @@ function renderTop() {
   const judged = done.filter(k => decisions[k] !== "info");
   const right = judged.filter(k => (decisions[k] === "escalate") === !!byId[k].truth).length;
   $("stats").innerHTML = `<span>Reviewed <b>${done.length}</b> of <b>${C.length}</b></span><span>Escalated <b>${done.filter(k => decisions[k] === "escalate").length}</b></span>` +
-    `<span>Dismissed <b>${done.filter(k => decisions[k] === "dismiss").length}</b></span>` + (reveal && judged.length ? `<span>Matches benchmark <b>${right}</b> of <b>${judged.length}</b></span>` : "");
+    `<span>Dismissed <b>${done.filter(k => decisions[k] === "dismiss").length}</b></span>` + (reveal && judged.length ? `<span title="On the alerts you judged. Model rule: escalate if it scores in the top half.">Right so far: you <b>${right}</b> · agent <b>${judged.filter(k => (byId[k].disp === "escalate") === !!byId[k].truth).length}</b> · model <b>${judged.filter(k => (byId[k].pct >= 50) === !!byId[k].truth).length}</b> of <b>${judged.length}</b></span>` : "");
   $("chips").innerHTML = FILTERS.map(([k, t]) => `<button class="chip" data-f="${k}" aria-pressed="${filter === k}">${t} <b>${C.filter(TEST[k]).length}</b></button>`).join("");
 }
 function renderList() {
@@ -330,26 +388,31 @@ function renderList() {
   }).join("") : `<div class="empty">No alerts match. Clear the search or choose "All".</div>`;
   return rows;
 }
-function flow(c) {
-  const ins = [], outs = [], seenI = new Set(), seenO = new Set();
-  c.pay.forEach(p => {
-    if (p.to === c.acct && !seenI.has(p.from)) { seenI.add(p.from); ins.push(p) }
-    if (p.from === c.acct && !seenO.has(p.to)) { seenO.add(p.to); outs.push(p) }
+function network(c) {
+  // Layer accounts by how many first-time payments separate them from the alerted account: senders left, receivers right.
+  if (!c.pay.length) return "";
+  const depth = { [c.acct]: 0 };
+  for (let pass = 0; pass < 4; pass++) c.pay.forEach(p => {
+    if (depth[p.from] !== undefined && depth[p.from] >= 0 && depth[p.to] === undefined) depth[p.to] = depth[p.from] + 1;
+    if (depth[p.to] !== undefined && depth[p.to] <= 0 && depth[p.from] === undefined) depth[p.from] = depth[p.to] - 1;
   });
-  if (!ins.length && !outs.length) return "";
-  const cap = 7, L = ins.slice(0, cap), R = outs.slice(0, cap), n = Math.max(L.length, R.length, 1);
-  const rowH = 26, H = n * rowH + 34, W = 640, mid = H / 2, bw = 150, bh = 20;
-  const y = (i, len) => mid - (len - 1) * rowH / 2 + i * rowH;
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="First-time payments into and out of ${c.acct}">`;
-  s += `<text class="dim" x="0" y="11">paid in (${ins.length})</text><text class="dim" x="${W}" y="11" text-anchor="end">paid out (${outs.length})</text>`;
-  L.forEach((p, i) => { const yy = y(i, L.length) + 8;
-    s += `<line x1="${bw}" y1="${yy}" x2="${W / 2 - bw / 2}" y2="${mid + 8}"/><rect x="0" y="${yy - bh / 2}" width="${bw}" height="${bh}"/><text x="6" y="${yy + 4}">${p.from} ${usd(p.usd)}</text>` });
-  R.forEach((p, i) => { const yy = y(i, R.length) + 8;
-    s += `<line x1="${W / 2 + bw / 2}" y1="${mid + 8}" x2="${W - bw}" y2="${yy}"/><rect x="${W - bw}" y="${yy - bh / 2}" width="${bw}" height="${bh}"/><text x="${W - bw + 6}" y="${yy + 4}">${p.to} ${usd(p.usd)}</text>` });
-  s += `<rect class="me" x="${W / 2 - bw / 2}" y="${mid + 8 - 13}" width="${bw}" height="26"/><text x="${W / 2}" y="${mid + 12}" text-anchor="middle" font-weight="500">${c.acct}</text>`;
-  const more = [ins.length > cap ? `${ins.length - cap} more senders` : "", outs.length > cap ? `${outs.length - cap} more receivers` : ""].filter(Boolean).join(", ");
-  return `<div class="flow">${s}</svg></div>` + (more ? `<p class="cap">Not drawn: ${more}. All are in the table.</p>` : "");
+  const cols = {}; Object.entries(depth).forEach(([a, d]) => (cols[d] = cols[d] || []).push(a));
+  const ds = Object.keys(cols).map(Number).sort((x, y) => x - y), cap = 8, hidden = {};
+  ds.forEach(d => { if (cols[d].length > cap) { hidden[d] = cols[d].length - cap; cols[d] = cols[d].slice(0, cap) } });
+  const colW = 118, bw = 78, bh = 20, rowH = 27, rows = Math.max(...ds.map(d => cols[d].length + (hidden[d] ? 1 : 0)));
+  const W = Math.max(ds.length * colW, 360), H = rows * rowH + 30, pos = {}, linked = new Set(c.linked);
+  ds.forEach((d, i) => cols[d].forEach((a, j) => { pos[a] = [i * colW + (W - ds.length * colW) / 2 + (colW - bw) / 2, 24 + (rows - cols[d].length - (hidden[d] ? 1 : 0)) * rowH / 2 + j * rowH] }));
+  let s = `<svg class="net" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="First-time payments around ${c.acct}, up to three steps away">`;
+  ds.forEach((d, i) => { s += `<text class="dim" x="${i * colW + (W - ds.length * colW) / 2 + colW / 2}" y="11" text-anchor="middle">${d === 0 ? "this account" : Math.abs(d) + (d < 0 ? " before" : " after")}</text>` });
+  c.pay.forEach((p, i) => { const a = pos[p.from], b = pos[p.to]; if (!a || !b) return;
+    const x1 = a[0] + bw, y1 = a[1] + bh / 2, x2 = b[0], y2 = b[1] + bh / 2, mx = (x1 + x2) / 2;
+    s += `<path data-e="${p.from} ${p.to}" d="M${x1} ${y1}C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}"><title>${p.from} paid ${p.to} ${usd(p.usd)} in ${esc(p.currency)}, ${p.time}</title></path>` });
+  Object.entries(pos).forEach(([a, [x, y]]) => { s += `<g class="n" data-n="${a}"><rect class="${a === c.acct ? "me" : linked.has(a) ? "lk" : ""}" x="${x}" y="${y}" width="${bw}" height="${bh}"/><text x="${x + bw / 2}" y="${y + 14}" text-anchor="middle">${a}</text></g>` });
+  ds.forEach((d, i) => { if (hidden[d]) s += `<text class="dim" x="${i * colW + (W - ds.length * colW) / 2 + colW / 2}" y="${24 + (rows - cols[d].length - 1) * rowH / 2 + cols[d].length * rowH + 14}" text-anchor="middle">+${hidden[d]} more</text>` });
+  return `<div class="flow">${s}</svg></div><p class="cap">Hover an account to follow its payments.${c.linked.length ? " Outlined accounts are the ones the agent links to the same scheme." : ""} Amounts are in the table.</p>`;
 }
+const TOOL = { account_summary: "Pulled the account summary for", trace_new_relationships: "Traced the money around", list_first_time_payments: "Listed first-time payments for", get_transactions: "Read the payments of" };
+const fmtVal = s => /usd|money|payment made/.test(s.what) ? usd(s.value) : /share/.test(s.what) ? Math.round(s.value * 100) + "%" : num(s.value);
 function renderCase() {
   const c = byId[current], d = decisions[c.id];
   const side = (label, x) => `<div class="fact"><dt>${label}</dt><dd>${x.payments} to ${x.parties} ${x.parties === 1 ? "party" : "parties"}, ${usd(x.usd)}</dd></div>`;
@@ -376,17 +439,28 @@ function renderCase() {
       <div class="fact"><dt>Share that are first-time</dt><dd>${Math.round(c.share * 100)}%</dd></div>
       <div class="fact"><dt>Before the window</dt><dd>${c.hist.payments} payments over ${c.hist.days_of_data} days</dd></div>
       <div class="fact"><dt>Accounts reached within 3 hops</dt><dd>${c.reach}</dd></div></dl></div>
-  ${c.pay.length ? `<div class="sec"><p class="eyebrow">Money along first-time relationships</p>${flow(c)}
+  <div class="sec"><p class="eyebrow">What stands out against other review alerts</p>
+    <div class="stand">${c.standout.map(x => `<span>${esc(x.what)}: <b>${fmtVal(x)}</b> · ${x.pct >= 50 ? "higher than " + x.pct + "%" : "lower than " + (100 - x.pct) + "%"}</span>`).join("")}</div></div>
+  ${c.pay.length ? `<div class="sec"><p class="eyebrow">Money along first-time relationships</p>${network(c)}
     <div class="tbl"><table><thead><tr><th>Time</th><th>From</th><th>To</th><th class="num">USD</th><th>Currency</th><th>Format</th></tr></thead><tbody>${rows}</tbody></table></div></div>` : ""}
   <div class="sec"><p class="eyebrow">Agent case file</p><p class="narr">${esc(c.narr)}</p>
     <ul class="ev">${c.ev.map(e => `<li>${esc(e)}</li>`).join("")}</ul>
     ${c.inn ? `<p class="narr"><span class="cap">Innocent explanation considered:</span> ${esc(c.inn)}</p>` : ""}
     ${c.linked.length ? `<div><p class="cap">Accounts the agent links to the same scheme</p><div class="linked">${c.linked.map(a => `<span>${a}</span>`).join("")}</div></div>` : ""}</div>
+  <div class="sec"><p class="eyebrow">How the agent investigated (audit trail)</p>
+    <ol class="steps"><li><b>Read the case file</b> <span>prepared from the alert: account summary and first-time payments.</span></li>
+      ${c.steps.map(t => `<li><b>${TOOL[t.tool] || esc(t.tool)}</b> <code>${esc(t.on)}</code> <span>${esc(t.got)}</span></li>`).join("")}
+      <li><b>Filed the verdict</b> <span>${c.status === "failsafe" ? "automatic escalation: the verdict was incomplete, so the alert went to a person." : c.disp + ", risk " + c.risk + " of 100."}</span></li></ol></div>
   <div class="sec"><p class="eyebrow">Your decision</p>
     <div class="decide"><button class="btn b-esc" data-d="escalate" aria-pressed="${d === "escalate"}">Escalate</button>
       <button class="btn b-dis" data-d="dismiss" aria-pressed="${d === "dismiss"}">Dismiss</button>
       <button class="btn b-info" data-d="info" aria-pressed="${d === "info"}">Need more information</button>
-      <button class="btn" data-next="1">Next open alert</button></div>${answer}</div>`;
+      <button class="btn" data-next="1">Next open alert</button></div>
+    <p class="keys">Keys: <kbd>E</kbd> escalate · <kbd>D</kbd> dismiss · <kbd>I</kbd> need information · <kbd>J</kbd> <kbd>K</kbd> move through the queue · <kbd>N</kbd> next open alert</p>${answer}</div>`;
+  const net = $("case").querySelector(".net");
+  if (net) { const hot = n => { net.querySelectorAll("path").forEach(e => e.classList.toggle("hot", !!n && e.dataset.e.split(" ").includes(n)));
+      net.querySelectorAll("g.n").forEach(g => g.classList.toggle("dimmed", !!n && g.dataset.n !== n && ![...net.querySelectorAll("path.hot")].some(e => e.dataset.e.split(" ").includes(g.dataset.n)))) };
+    net.addEventListener("pointerover", e => { const g = e.target.closest("g.n"); hot(g ? g.dataset.n : null) }); net.addEventListener("pointerleave", () => hot(null)) }
 }
 function renderDesk() { renderTop(); renderList(); renderCase() }
 /* After a filter or search, open the first matching alert so the case panel always follows the list. */
@@ -405,8 +479,20 @@ $("reveal").checked = reveal;
 $("reveal").addEventListener("change", e => { reveal = e.target.checked; save(); renderDesk() });
 $("case").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
-  if (b.dataset.d) { decisions[current] === b.dataset.d ? delete decisions[current] : decisions[current] = b.dataset.d; save(); renderDesk() }
-  if (b.dataset.next) { const i = C.findIndex(c => c.id === current); const n = C.slice(i + 1).concat(C.slice(0, i)).find(c => !decisions[c.id]); if (n) { current = n.id; renderDesk(); $("case").scrollIntoView({ block: "start" }) } }
+  if (b.dataset.d) decide(b.dataset.d);
+  if (b.dataset.next) nextOpen();
+});
+function decide(d) { decisions[current] === d ? delete decisions[current] : decisions[current] = d; save(); renderDesk() }
+function nextOpen() { const i = C.findIndex(c => c.id === current); const n = C.slice(i + 1).concat(C.slice(0, i)).find(c => !decisions[c.id]); if (n) { current = n.id; renderDesk(); keepVisible() } }
+function keepVisible() { const r = $("list").querySelector('[aria-current="true"]'); if (r) r.scrollIntoView({ block: "nearest" }) }
+document.addEventListener("keydown", e => {
+  if ($("view-desk").hidden || e.metaKey || e.ctrlKey || e.altKey || e.target.matches("input:not([type=checkbox]), textarea, select")) return;
+  const k = e.key.toLowerCase(), rows = C.filter(passes), i = rows.findIndex(c => c.id === current);
+  if (k === "e") decide("escalate"); else if (k === "d") decide("dismiss"); else if (k === "i") decide("info"); else if (k === "n") nextOpen();
+  else if ((k === "j" || k === "arrowdown") && i < rows.length - 1) { current = rows[i + 1].id; renderList(); renderCase(); keepVisible() }
+  else if ((k === "k" || k === "arrowup") && i > 0) { current = rows[i - 1].id; renderList(); renderCase(); keepVisible() }
+  else return;
+  e.preventDefault();
 });
 renderResults(); renderDesk();
 if (location.hash === "#desk") show("desk");

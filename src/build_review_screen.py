@@ -19,6 +19,44 @@ import ibm_tools as T
 from ibm_agent import RULE_MEANINGS, add_percentiles
 
 RUN = "ibm-test-haiku"
+STANDOUT = {"out_parties": "first-time parties paid", "out_currencies": "currencies paid out", "out_max_usd": "largest first-time payment made",
+            "in_parties": "first-time parties paying in", "first_time_share": "share of activity that is first-time",
+            "history_transactions": "payments before the window", "out_parties_paying_on": "share of payees who paid onward",
+            "window_usd": "money moved in the window"}
+
+
+def step_summary(name: str, out: dict) -> str:
+    """One plain line saying what a tool call returned, for the audit trail."""
+    if "error" in out:
+        return f"error: {out['error']}"
+    if name == "account_summary":
+        return (f"{out['first_time_payments_made']['payments']} first-time payments made, "
+                f"{out['first_time_payments_received']['payments']} received, "
+                f"{out['before_the_window']['payments']} payments before the window")
+    if name == "trace_new_relationships":
+        cyc = "a cycle back to the account" if out["cycle_back_to_this_account"] else "no cycle"
+        return (f"reached {out['accounts_reached']} accounts; largest fan-out {out['largest_fan_out_at_any_account']}, "
+                f"largest fan-in {out['largest_fan_in_at_any_account']}; {cyc}")
+    if name == "list_first_time_payments":
+        return f"{out['first_time_payments']} first-time payments listed"
+    if name == "get_transactions":
+        return f"{out['payments_in_window']} payments in the window"
+    return "returned"
+
+
+def scheme_breakdown(alerts: pd.DataFrame, ptype: dict, top_k: int) -> list:
+    """For each labeled scheme type: how many true test alerts there are, and how many the model ranks in its top slice."""
+    test = alerts[alerts.split == "test"].sort_values("model_score", ascending=False)
+    test = test.assign(in_top=[i < top_k for i in range(len(test))])
+    rows = {}
+    for r in test[test.is_true_alert == 1].itertuples():
+        kinds = {ptype[int(p)] for p in r.patterns.split("|") if p} or {"NOT IN A LABELED SCHEME"}
+        for k in kinds:
+            n = rows.setdefault(k, [0, 0, 0])
+            n[0] += 1
+            n[1] += int(r.in_top)
+            n[2] += int(r.in_band)
+    return sorted(([k.title().replace("-", " "), *v] for k, v in rows.items()), key=lambda x: -x[2] / x[1])
 
 
 def main():
@@ -28,6 +66,8 @@ def main():
     ptype = tx[tx.pattern_id >= 0].groupby("pattern_id").pattern_type.first().map(lambda i: meta["pattern_types"][i]).to_dict()
     run = Path("results/ibm/agent_runs") / RUN
     metrics = json.loads((run / "metrics.json").read_text())
+    feats = pd.read_parquet("results/ibm/alert_features.parquet").set_index("alert_id")
+    pool = feats.loc[alerts.index[(alerts.split == "test") & alerts.in_band]]
     cases = []
     for line in open(run / "traces.jsonl"):
         v = json.loads(line)
@@ -36,6 +76,12 @@ def main():
         s = T.account_summary(L, v["account"], date)
         tr = T.trace_new_relationships(L, v["account"], date)
         kinds = sorted({ptype[int(p)] for p in a.patterns.split("|") if p})
+        steps = [{"tool": t["name"], "on": t["input"].get("account", ""), "got": step_summary(t["name"], t["output"])}
+                 for t in v["trace"] if t["type"] == "tool"]
+        row = feats.loc[v["alert_id"]]
+        ranks = sorted(((abs((pool[f] < row[f]).mean() + (pool[f] == row[f]).mean() / 2 - 0.5), f) for f in STANDOUT), reverse=True)[:3]
+        standout = [{"what": STANDOUT[f], "value": float(row[f]),
+                     "pct": round(float(((pool[f] < row[f]).mean() + (pool[f] == row[f]).mean() / 2) * 100))} for _, f in ranks]
         cases.append({
             "id": v["alert_id"], "acct": v["account"], "date": date, "rules": a.rules.split("|"),
             "pct": round(float(a.percentile)), "risk": v["risk_score"], "disp": v["disposition"], "typ": v["typology"],
@@ -44,6 +90,7 @@ def main():
             "win": s["window"], "made": s["first_time_payments_made"], "recv": s["first_time_payments_received"],
             "all": s["all_activity_in_window"], "share": s["share_of_window_payments_that_are_first_time"],
             "hist": s["before_the_window"], "pay": tr["payments"][:24], "reach": tr["accounts_reached"],
+            "steps": steps, "standout": standout,
             "truth": int(a.is_true_alert), "scheme": kinds,
         })
     cases.sort(key=lambda c: -c["pct"])
@@ -55,6 +102,7 @@ def main():
     kept = np.cumsum(test.is_true_alert.to_numpy()) / test.is_true_alert.sum()
     full_curve = [[0, 0]] + [[round(x / 100, 2), round(float(kept[max(0, int(len(test) * x / 100) - 1)]), 4)] for x in range(1, 101)]
 
+    top_ids = set(test.index[:model["test"]["keep_80pct_true"]["alerts_reviewed"]])
     ids = [c["id"] for c in cases]
     y = alerts.loc[ids].is_true_alert.to_numpy()
     n_t, n_f = int(y.sum()), int((1 - y).sum())
@@ -67,6 +115,7 @@ def main():
 
     r, d, m80, m90 = metrics["ranking"], metrics["agent_decision"], model["test"]["keep_80pct_true"], model["test"]["keep_90pct_true"]
     data = {"cases": cases, "rules": RULE_MEANINGS,
+            "types": scheme_breakdown(alerts.reset_index(), ptype, m80["alerts_reviewed"]),
             "curves": {"full": full_curve,
                        "model": curve(alerts.loc[ids].model_score.to_numpy()),
                        "agent": curve(np.array([c["risk"] for c in cases]) / 100)},
@@ -84,6 +133,8 @@ def main():
                       "failsafe": metrics["operations"]["failsafe_escalations"]["count"],
                       "tokens_in": metrics["operations"]["avg_input_tokens"], "seconds": metrics["operations"]["avg_seconds"],
                       "agent_true": d["true_alerts_escalated"], "agent_false": d["false_alarms_dismissed"],
+                      "labeled": int(((t_ := alerts[(alerts.split == "test") & (alerts.is_true_alert == 1)]).patterns != "").sum()),
+                      "labeled_top": int((t_.patterns != "").sum()) - sum(1 for i in t_.index[t_.patterns != ""] if i not in top_ids),
                       "tests": sum(t.read_text().count("\ndef test_") for t in Path("tests").glob("test_*.py"))}}
     template = Path("app/review_template.html").read_text()
     payload = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
