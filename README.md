@@ -6,6 +6,9 @@ Money-laundering alert triage, measured on the public IBM AML benchmark. Rules
 raise alerts, a scoring model ranks them, an LLM agent writes the case file, and
 a person decides.
 
+**Live demo:** https://aml-sentinel-app.netlify.app (results, a workload calculator,
+and a case desk with 300 held-out alerts)
+
 | On held-out test days | HI-Small | LI-Small (nothing re-tuned) |
 |---|---|---|
 | Alerts from rules alone | 20,784, of which 93.5% false alarms | 27,297, of which 96.6% false alarms |
@@ -235,11 +238,9 @@ first-time payment network, the agent's case file and audit trail, and decision
 buttons. A results view carries the measured figures and a workload calculator.
 Benchmark labels stay hidden until the viewer asks for them.
 
-Published as a Claude artifact, the page also runs the agent live: "Investigate
-live" starts a tool-using investigation in the page with each lookup shown as it
-happens, and a question box answers in plain language from the case data. Live
-runs use the same guidance as the tested agent, vary from run to run, and are not
-part of the measured results.
+`app/site/index.html` is the standalone build served at the demo address. A second
+build, `app/review.html`, adds a live agent that can be run on any case when the
+page is hosted on a platform that provides a model runtime.
 
 ## Earlier work on synthetic data
 
