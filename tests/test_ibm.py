@@ -209,3 +209,40 @@ def test_review_share_does_not_depend_on_row_order_when_scores_tie():
     a = E.review_share(y, s, w, 0.5)
     b = E.review_share(y[::-1], s, w, 0.5)
     assert a == b == 0.5        # a score that cannot tell alerts apart saves no work
+
+
+# ---------- faithfulness of case files ----------
+import ibm_faithfulness as Fa  # noqa: E402
+
+
+def test_amounts_are_read_from_prose_with_abbreviations():
+    got = Fa.amounts_in("received $13,005.07, then about $35k and €6.93M; 11 hours later, USD 11 is not money here")
+    assert [round(v) for v, _ in got] == [13005, 35000, 6930000]
+    assert [loose for _, loose in got] == [False, True, True]
+
+
+def test_exact_figures_must_match_closely_but_rounded_ones_may_be_approximate():
+    known = [13005.07, 35333.0]
+    assert Fa.classify_amount(13005.07, False, known, []) == "found"
+    assert Fa.classify_amount(13500.0, False, known, []) == "unsupported"
+    assert Fa.classify_amount(35000.0, True, known, []) == "found"
+
+
+def test_sums_of_listed_payments_count_as_derived():
+    groups = [[1000.0, 2500.0, 400.0]]
+    assert Fa.classify_amount(3900.0, False, [], groups) == "derived"       # all three
+    assert Fa.classify_amount(3500.0, False, [], groups) == "derived"       # two of them
+    assert Fa.classify_amount(9999.0, False, [], groups) == "unsupported"
+
+
+def test_case_file_check_flags_an_account_and_a_figure_that_were_never_shown():
+    evidence = 'Account: A000001 {"payments":[{"to":"A000002","usd":5000.0},{"to":"A000003","usd":700.0}]}'
+    objects = [{"payments": [{"to": "A000002", "usd": 5000.0}, {"to": "A000003", "usd": 700.0}]}]
+    good = Fa.check_case("A000001 paid A000002 $5,000 and $5,700 in total.", evidence, objects)
+    assert good["accounts"] == good["accounts_grounded"] == 2 and good["found"] == 1 and good["derived"] == 1 and good["unsupported"] == 0
+    bad = Fa.check_case("A000001 paid A000009 $82,000.", evidence, objects)
+    assert bad["ungrounded_accounts"] == ["A000009"] and bad["unsupported"] == 1
+
+
+def test_thousands_separators_in_shown_text_are_one_number():
+    assert 10000.0 in Fa.numbers_in("a first-time payment of $10,000 or more") and 1234567.0 in Fa.numbers_in("1,234,567")

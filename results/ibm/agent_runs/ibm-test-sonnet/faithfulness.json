@@ -1,0 +1,52 @@
+{
+  "case_files_checked": 100,
+  "accounts_cited_grounded": {
+    "count": 288,
+    "of": 288,
+    "rate": 1.0,
+    "ci95": [
+      0.9868,
+      1
+    ]
+  },
+  "amounts_cited": 578,
+  "amounts_found_in_evidence": {
+    "count": 575,
+    "of": 578,
+    "rate": 0.9948,
+    "ci95": [
+      0.9849,
+      0.9982
+    ]
+  },
+  "amounts_derived_by_adding": {
+    "count": 0,
+    "of": 578,
+    "rate": 0.0,
+    "ci95": [
+      0,
+      0.0066
+    ]
+  },
+  "amounts_unsupported": {
+    "count": 3,
+    "of": 578,
+    "rate": 0.0052,
+    "ci95": [
+      0.0018,
+      0.0151
+    ]
+  },
+  "case_files_fully_traceable": {
+    "count": 97,
+    "of": 100,
+    "rate": 0.97,
+    "ci95": [
+      0.9155,
+      0.9897
+    ]
+  },
+  "avg_accounts_per_case_file": 2.88,
+  "avg_amounts_per_case_file": 5.78,
+  "ungrounded_account_examples": []
+}

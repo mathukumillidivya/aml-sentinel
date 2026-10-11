@@ -1,0 +1,59 @@
+{
+  "case_files_checked": 298,
+  "accounts_cited_grounded": {
+    "count": 813,
+    "of": 814,
+    "rate": 0.9988,
+    "ci95": [
+      0.9931,
+      0.9998
+    ]
+  },
+  "amounts_cited": 1121,
+  "amounts_found_in_evidence": {
+    "count": 1093,
+    "of": 1121,
+    "rate": 0.975,
+    "ci95": [
+      0.9641,
+      0.9827
+    ]
+  },
+  "amounts_derived_by_adding": {
+    "count": 13,
+    "of": 1121,
+    "rate": 0.0116,
+    "ci95": [
+      0.0068,
+      0.0197
+    ]
+  },
+  "amounts_unsupported": {
+    "count": 15,
+    "of": 1121,
+    "rate": 0.0134,
+    "ci95": [
+      0.0081,
+      0.022
+    ]
+  },
+  "case_files_fully_traceable": {
+    "count": 283,
+    "of": 298,
+    "rate": 0.9497,
+    "ci95": [
+      0.9186,
+      0.9693
+    ]
+  },
+  "avg_accounts_per_case_file": 2.73,
+  "avg_amounts_per_case_file": 3.76,
+  "ungrounded_account_examples": [
+    {
+      "alert_id": "IB047239",
+      "accounts": [
+        "A416939"
+      ]
+    }
+  ]
+}
