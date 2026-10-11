@@ -53,7 +53,7 @@ This is called **retrieval**, and it is the idea behind "RAG"
 (retrieval-augmented generation).
 
 I checked it for free first. The similar cases alone, with no agent, scored 0.74,
-still below the model's 0.81. Then a small trial of 50 development alerts with
+still below the model's 0.80. Then a small trial of 50 development alerts with
 the agent: 0.77 with similar cases against 0.79 without, on the same alerts. No
 gain, so I stopped before spending on a full test.
 
