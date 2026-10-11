@@ -95,6 +95,22 @@ def main():
         })
     cases.sort(key=lambda c: -c["pct"])
 
+    # Every other account that appears in a case, so the viewer can look it up: a short summary plus where it appears
+    others = {}
+    for c in cases:
+        for acct in {a for pmt in c["pay"] for a in (pmt["from"], pmt["to"])} | set(c["linked"]):
+            if acct == c["acct"]:
+                continue
+            o = others.get(acct)
+            if o is None:
+                su = T.account_summary(L, acct, c["date"])
+                m_, r_, al_, h_ = su["first_time_payments_made"], su["first_time_payments_received"], su["all_activity_in_window"], su["before_the_window"]
+                o = others[acct] = {"win": su["window"], "m": [m_["payments"], m_["parties"], round(m_["usd"])],
+                                    "r": [r_["payments"], r_["parties"], round(r_["usd"])],
+                                    "all": [al_["payments_made"], al_["payments_received"]], "h": [h_["payments"], h_["days_of_data"]],
+                                    "cur": m_["currencies"], "in": []}
+            o["in"].append(c["id"])
+
     # Overview figures: every number comes from a results file, none is typed in by hand
     rules = json.loads(Path("results/ibm/rules_baseline.json").read_text())["test"]
     model = json.loads(Path("results/ibm/model_baseline.json").read_text())
@@ -114,7 +130,7 @@ def main():
         return [[0, 0]] + [[round(E.review_share(y, score, w, k), 4), k] for k in levels]
 
     r, d, m80, m90 = metrics["ranking"], metrics["agent_decision"], model["test"]["keep_80pct_true"], model["test"]["keep_90pct_true"]
-    data = {"cases": cases, "rules": RULE_MEANINGS,
+    data = {"cases": cases, "rules": RULE_MEANINGS, "others": others,
             "types": scheme_breakdown(alerts.reset_index(), ptype, m80["alerts_reviewed"]),
             "curves": {"full": full_curve,
                        "model": curve(alerts.loc[ids].model_score.to_numpy()),

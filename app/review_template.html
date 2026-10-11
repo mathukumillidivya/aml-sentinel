@@ -146,6 +146,11 @@ details { font-size: 13px } summary { cursor: pointer; color: var(--muted) }
 .flow svg.net { width: auto; min-width: 0; max-width: none }
 .net rect.lk { stroke: var(--s2); stroke-width: 2 } .net path { fill: none; stroke: var(--muted); stroke-width: 1.2; opacity: .55 } .net path.hot { stroke: var(--accent); opacity: 1; stroke-width: 2 }
 .net g.n { cursor: default } .net g.dimmed { opacity: .3 }
+.acct { font: inherit; background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px }
+.linked .acct { font: 12px var(--mono); background: var(--sunk); padding: 2px 6px; text-decoration: none; color: var(--ink) } .linked .acct:hover { outline: 1px solid var(--accent) }
+.net g.n { cursor: pointer }
+.look { background: var(--accent-soft); border-left: 3px solid var(--accent); padding: 12px 14px; display: grid; gap: 8px }
+.look h3 { font: 500 16px var(--mono) } .look .x { justify-self: start }
 .keys { font-size: 12px; color: var(--muted) } kbd { font: 11px var(--mono); border: 1px solid var(--line); padding: 0 4px; background: var(--bg) }
 .flow { overflow-x: auto } .flow svg { display: block; min-width: 520px; width: 100%; height: auto }
 .flow text { font: 11px var(--mono); fill: var(--ink) } .flow .dim { fill: var(--muted) }
@@ -190,7 +195,7 @@ footer { color: var(--muted); font-size: 12px; max-width: 86ch }
       <div class="qhead">
         <p class="eyebrow">Queue, highest model score first</p>
         <div class="chips" id="chips"></div>
-        <input id="find" type="search" placeholder="Find account or alert, e.g. A141953" aria-label="Find account or alert">
+        <input id="find" type="search" placeholder="Find any account, e.g. A141953" aria-label="Find any account or alert">
         <p class="count" id="count"></p>
       </div>
       <div class="list" id="list"></div>
@@ -386,7 +391,12 @@ function renderList() {
     const tag = d ? `<span class="tag t-${d === "escalate" ? "esc" : d === "dismiss" ? "dis" : "info"}">${LABEL[d]}</span>` : `<span class="tag t-none">Open</span>`;
     return `<button class="row" data-id="${c.id}" aria-current="${c.id === current}"><span class="pct" title="Model score percentile"><b>${c.pct}</b><i><u style="width:${c.pct}%"></u></i></span>
       <span style="min-width:0"><div class="rid">${c.acct}</div><div class="rsub">${c.rules.join(" ")} · agent ${c.risk} · ${c.disp === "escalate" ? "flagged" : "dismissed"}</div></span>${tag}</button>`;
-  }).join("") : `<div class="empty">No alerts match. Clear the search or choose "All".</div>`;
+  }).join("") : (() => {
+    const hits = query ? Object.keys(DATA.others).filter(a => a.toLowerCase().includes(query)).slice(0, 6) : [];
+    return hits.length ? `<div class="empty">No alerted account matches, but ${hits.length === 1 ? "this account is" : "these accounts are"} connected to one:</div>` +
+      hits.map(a => `<button class="row" data-openq="${DATA.others[a].in[0]}" data-look="${a}"><span></span><span style="min-width:0"><div class="rid">${a}</div><div class="rsub">connected to ${byId[DATA.others[a].in[0]].acct}</div></span><span class="tag t-none">Look up</span></button>`).join("")
+      : `<div class="empty">No account matches. Clear the search or choose "All".</div>`;
+  })();
   return rows;
 }
 function network(c) {
@@ -410,14 +420,30 @@ function network(c) {
     s += `<path data-e="${p.from} ${p.to}" d="M${x1} ${y1}C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}"><title>${p.from} paid ${p.to} ${usd(p.usd)} in ${esc(p.currency)}, ${p.time}</title></path>` });
   Object.entries(pos).forEach(([a, [x, y]]) => { s += `<g class="n" data-n="${a}"><rect class="${a === c.acct ? "me" : linked.has(a) ? "lk" : ""}" x="${x}" y="${y}" width="${bw}" height="${bh}"/><text x="${x + bw / 2}" y="${y + 14}" text-anchor="middle">${a}</text></g>` });
   ds.forEach((d, i) => { if (hidden[d]) s += `<text class="dim" x="${i * colW + (W - ds.length * colW) / 2 + colW / 2}" y="${24 + (rows - cols[d].length - 1) * rowH / 2 + cols[d].length * rowH + 14}" text-anchor="middle">+${hidden[d]} more</text>` });
-  return `<div class="flow">${s}</svg></div><p class="cap">Hover an account to follow its payments.${c.linked.length ? " Outlined accounts are the ones the agent links to the same scheme." : ""} Amounts are in the table.</p>`;
+  return `<div class="flow">${s}</svg></div><p class="cap">Hover an account to follow its payments, or click it to look it up.${c.linked.length ? " Outlined accounts are the ones the agent links to the same scheme." : ""} Amounts are in the table.</p>`;
 }
 const TOOL = { account_summary: "Pulled the account summary for", trace_new_relationships: "Traced the money around", list_first_time_payments: "Listed first-time payments for", get_transactions: "Read the payments of" };
 const fmtVal = s => /usd|money|payment made/.test(s.what) ? usd(s.value) : /share/.test(s.what) ? Math.round(s.value * 100) + "%" : num(s.value);
+let lookup = null;      // another account the viewer asked to see, shown inside the current case
+function lookPanel(c) {
+  const o = DATA.others[lookup], own = C.find(x => x.acct === lookup);
+  if (!o && !own) return `<div class="sec"><div class="look"><h3>${esc(lookup)}</h3><p>No details are loaded for this account in the demo.</p><button class="btn x" data-close="1">Close</button></div></div>`;
+  const where = o ? o.in.filter(id => id !== c.id) : [];
+  const facts = o ? `<dl class="facts">
+      <div class="fact"><dt>First-time payments made</dt><dd>${o.m[0]} to ${o.m[1]} ${o.m[1] === 1 ? "party" : "parties"}, ${usd(o.m[2])}</dd></div>
+      <div class="fact"><dt>First-time payments received</dt><dd>${o.r[0]} from ${o.r[1]} ${o.r[1] === 1 ? "party" : "parties"}, ${usd(o.r[2])}</dd></div>
+      <div class="fact"><dt>All payments in window</dt><dd>${o.all[0]} made, ${o.all[1]} received</dd></div>
+      <div class="fact"><dt>Before the window</dt><dd>${o.h[0]} payments over ${o.h[1]} days</dd></div>
+      <div class="fact"><dt>Currencies paid out (first-time)</dt><dd>${o.cur.length ? esc(o.cur.join(", ")) : "none"}</dd></div></dl>` : "";
+  return `<div class="sec"><div class="look"><p class="eyebrow">Account lookup${o ? " · window " + o.win : ""}</p><h3>${lookup}</h3>${facts}
+    <p class="cap">${own ? "This account has its own alert in the queue." : "This account was not alerted. It appears here because it is connected to an alerted account."}${where.length ? " It also appears in " + where.length + " other " + (where.length === 1 ? "case" : "cases") + "." : ""}</p>
+    <div class="decide">${own ? `<button class="btn" data-open="${own.id}">Open its alert</button>` : ""}${where.slice(0, 4).map(id => `<button class="btn" data-open="${id}">Open ${byId[id].acct}</button>`).join("")}<button class="btn x" data-close="1">Close</button></div></div></div>`;
+}
+const A = a => `<button class="acct" data-a="${a}">${a}</button>`;
 function renderCase() {
   const c = byId[current], d = decisions[c.id];
   const side = (label, x) => `<div class="fact"><dt>${label}</dt><dd>${x.payments} to ${x.parties} ${x.parties === 1 ? "party" : "parties"}, ${usd(x.usd)}</dd></div>`;
-  const rows = c.pay.map(p => `<tr class="${p.from === c.acct || p.to === c.acct ? "self" : ""}"><td>${p.time}</td><td>${p.from}</td><td>${p.to}</td><td class="num">${usd(p.usd)}</td><td>${esc(p.currency)}</td><td>${esc(p.format)}</td></tr>`).join("");
+  const rows = c.pay.map(p => `<tr class="${p.from === c.acct || p.to === c.acct ? "self" : ""}"><td>${p.time}</td><td>${p.from === c.acct ? p.from : A(p.from)}</td><td>${p.to === c.acct ? p.to : A(p.to)}</td><td class="num">${usd(p.usd)}</td><td>${esc(p.currency)}</td><td>${esc(p.format)}</td></tr>`).join("");
   const answer = reveal && d && d !== "info" ? `<div class="answer">Benchmark label: <b>${c.truth ? "laundering" : "not laundering"}</b>${c.scheme.length ? ` (${c.scheme.join(", ").toLowerCase()} scheme)` : ""}. ` +
     `Your decision ${(d === "escalate") === !!c.truth ? "matches" : "does not match"}. The agent ${c.disp === "escalate" ? "flagged" : "dismissed"} it.</div>` : "";
   $("case").innerHTML = `
@@ -426,6 +452,7 @@ function renderCase() {
       <span class="tag ${c.disp === "escalate" ? "t-esc" : "t-dis"}">Agent recommends: ${c.disp}${c.status === "failsafe" ? " (fail-safe)" : ""}</span></div>
     <ul class="rules">${c.rules.map(r => `<li><code>${r}</code> ${esc(DATA.rules[r] || "")}</li>`).join("")}</ul>
   </div>
+  ${lookup ? lookPanel(c) : ""}
   <div class="sec"><div class="scores">
       <div class="score"><p class="eyebrow">Scoring model</p><div class="v">${c.pct}<small> percentile</small></div><div class="bar"><i style="width:${c.pct}%"></i></div>
         <p class="cap">Scores higher than ${c.pct}% of that day's review alerts. The queue follows this ranking.</p></div>
@@ -447,7 +474,7 @@ function renderCase() {
   <div class="sec"><p class="eyebrow">Agent case file</p><p class="narr">${esc(c.narr)}</p>
     <ul class="ev">${c.ev.map(e => `<li>${esc(e)}</li>`).join("")}</ul>
     ${c.inn ? `<p class="narr"><span class="cap">Innocent explanation considered:</span> ${esc(c.inn)}</p>` : ""}
-    ${c.linked.length ? `<div><p class="cap">Accounts the agent links to the same scheme</p><div class="linked">${c.linked.map(a => `<span>${a}</span>`).join("")}</div></div>` : ""}</div>
+    ${c.linked.length ? `<div><p class="cap">Accounts the agent links to the same scheme</p><div class="linked">${c.linked.map(a => A(a)).join("")}</div></div>` : ""}</div>
   <div class="sec"><p class="eyebrow">How the agent investigated (audit trail)</p>
     <ol class="steps"><li><b>Read the case file</b> <span>prepared from the alert: account summary and first-time payments.</span></li>
       ${c.steps.map(t => `<li><b>${TOOL[t.tool] || esc(t.tool)}</b> <code>${esc(t.on)}</code> <span>${esc(t.got)}</span></li>`).join("")}
@@ -465,7 +492,7 @@ function renderCase() {
 }
 function renderDesk() { renderTop(); renderList(); renderCase() }
 /* After a filter or search, open the first matching alert so the case panel always follows the list. */
-function refilter() { renderTop(); const rows = C.filter(passes); if (rows.length && !rows.some(c => c.id === current)) current = rows[0].id; renderList(); renderCase(); $("list").scrollTop = 0 }
+function refilter() { renderTop(); const rows = C.filter(passes); if (rows.length && !rows.some(c => c.id === current)) { current = rows[0].id; lookup = null } renderList(); renderCase(); $("list").scrollTop = 0 }
 
 function show(view) {
   ["results", "desk"].forEach(v => { $("view-" + v).hidden = v !== view; $("tab-" + v).setAttribute("aria-selected", v === view) });
@@ -473,13 +500,20 @@ function show(view) {
   window.scrollTo(0, 0);
 }
 document.addEventListener("click", e => { const b = e.target.closest("[data-view]"); if (b) show(b.dataset.view) });
-$("list").addEventListener("click", e => { const r = e.target.closest(".row"); if (r) { current = r.dataset.id; renderList(); renderCase(); if (window.innerWidth <= 860) $("case").scrollIntoView({ block: "start" }) } });
+$("list").addEventListener("click", e => {
+  const o = e.target.closest("[data-openq]"); if (o) { lookup = o.dataset.look; filter = "all"; query = ""; $("find").value = ""; current = o.dataset.openq; renderDesk(); keepVisible(); $("case").scrollIntoView({ block: "start" }); return }
+  const r = e.target.closest(".row"); if (r) { lookup = null; current = r.dataset.id; renderList(); renderCase(); if (window.innerWidth <= 860) $("case").scrollIntoView({ block: "start" }) } });
 $("chips").addEventListener("click", e => { const b = e.target.closest(".chip"); if (b) { filter = b.dataset.f; refilter() } });
 $("find").addEventListener("input", e => { query = e.target.value.trim().toLowerCase(); refilter() });
 $("reveal").checked = reveal;
 $("reveal").addEventListener("change", e => { reveal = e.target.checked; save(); renderDesk() });
 $("case").addEventListener("click", e => {
+  const g = e.target.closest(".net g.n");
+  if (g && g.dataset.n !== current && g.dataset.n !== byId[current].acct) { lookup = g.dataset.n; renderCase(); $("case").scrollIntoView({ block: "start" }); return }
   const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.a) { lookup = b.dataset.a; renderCase(); $("case").scrollIntoView({ block: "start" }) }
+  if (b.dataset.close) { lookup = null; renderCase() }
+  if (b.dataset.open) { lookup = null; filter = "all"; query = ""; $("find").value = ""; current = b.dataset.open; renderDesk(); keepVisible(); $("case").scrollIntoView({ block: "start" }) }
   if (b.dataset.d) decide(b.dataset.d);
   if (b.dataset.next) nextOpen();
 });
@@ -490,8 +524,8 @@ document.addEventListener("keydown", e => {
   if ($("view-desk").hidden || e.metaKey || e.ctrlKey || e.altKey || e.target.matches("input:not([type=checkbox]), textarea, select")) return;
   const k = e.key.toLowerCase(), rows = C.filter(passes), i = rows.findIndex(c => c.id === current);
   if (k === "e") decide("escalate"); else if (k === "d") decide("dismiss"); else if (k === "i") decide("info"); else if (k === "n") nextOpen();
-  else if ((k === "j" || k === "arrowdown") && i < rows.length - 1) { current = rows[i + 1].id; renderList(); renderCase(); keepVisible() }
-  else if ((k === "k" || k === "arrowup") && i > 0) { current = rows[i - 1].id; renderList(); renderCase(); keepVisible() }
+  else if ((k === "j" || k === "arrowdown") && i < rows.length - 1) { lookup = null; current = rows[i + 1].id; renderList(); renderCase(); keepVisible() }
+  else if ((k === "k" || k === "arrowup") && i > 0) { lookup = null; current = rows[i - 1].id; renderList(); renderCase(); keepVisible() }
   else return;
   e.preventDefault();
 });
