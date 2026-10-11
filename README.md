@@ -298,8 +298,5 @@ repository secrets.
   synthetic and contains no real customers. Files derived from it in this
   repository are listed in `DATA.md` and carry the same licence.
 
-## How this was built
-
-Built with an AI coding assistant (Claude); the commit history records the
-co-authorship. Every figure in this README is produced by code in this
-repository and stored under `results/`.
+Every figure in this README is produced by code in this repository and stored
+under `results/`.
