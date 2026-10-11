@@ -159,6 +159,23 @@ def main():
     template = Path("app/review_template.html").read_text()
     payload = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
     Path("app/review.html").write_text(template.replace("/*__DATA__*/null", payload))
+
+    # Standalone build: a complete web page for any static host, with the in-page live agent left out
+    # (that feature needs the hosting platform's runtime, which an ordinary web host does not have).
+    import re
+    site = template
+    site = re.sub(r"<!--live:start-->.*?<!--live:end-->", "", site, flags=re.S)
+    site = re.sub(r"<!--card:start-->.*?<!--card:end-->",
+                  '<div><p class="eyebrow">On the record</p><h3>Every step it took is shown</h3>'
+                  "<p>On the case desk, each case lists the lookups the agent made, what came back, and the verdict it filed.</p>"
+                  '<button class="lbtn" data-view="desk" style="justify-self:start">Open the case desk</button></div>', site, flags=re.S)
+    site = re.sub(r"/\*live:start\*/.*?/\*live:end\*/", "let liveFor = null; function resetLive(id) { liveFor = id }", site, flags=re.S)
+    lean = {k: v for k, v in data.items() if k != "guidance"}
+    head = ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+            "<style>html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>")
+    Path("app/site").mkdir(exist_ok=True)
+    Path("app/site/index.html").write_text(head + site.replace("/*__DATA__*/null", json.dumps(lean, separators=(",", ":")).replace("</", "<\\/")) + "</body></html>")
     print(f"{len(cases)} cases, {len(payload) / 1e6:.2f} MB -> app/review.html")
 
 

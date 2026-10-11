@@ -220,7 +220,7 @@ footer { color: var(--muted); font-size: 12px; max-width: 86ch }
       </div>
       <div class="list" id="list"></div>
     </section>
-    <article class="case" id="case"><div class="part" id="caseA"></div><section class="live" id="live" aria-label="Live AI agent"></section><div class="part" id="caseB"></div></article>
+    <article class="case" id="case"><div class="part" id="caseA"></div><!--live:start--><section class="live" id="live" aria-label="Live AI agent"></section><!--live:end--><div class="part" id="caseB"></div></article>
   </div>
 </main>
 
@@ -304,8 +304,8 @@ function renderResults() {
     <div class="ai3">
       <div><p class="eyebrow">Machine learning</p><h3>A model that learned what laundering looks like</h3><p>Trained on ${num(18827)} labeled alerts. It reads 27 facts about each new alert and ranks the queue. This is where the ${pc(k80.workload_reduction)} comes from.</p></div>
       <div><p class="eyebrow">AI agent</p><h3>An agent that investigates by itself</h3><p>A language model that decides which evidence to pull, follows the money between accounts, and writes the case file, with five tested safeguards around it.</p></div>
-      <div><p class="eyebrow">Live in this page</p><h3>Run the agent yourself</h3><p>On the case desk, start a live investigation and watch it work step by step, or ask it questions about any case in plain language.</p>
-        <button class="lbtn" data-view="desk" style="justify-self:start">Try the live agent</button></div>
+<!--card:start-->      <div><p class="eyebrow">Live in this page</p><h3>Run the agent yourself</h3><p>On the case desk, start a live investigation and watch it work step by step, or ask it questions about any case in plain language.</p>
+        <button class="lbtn" data-view="desk" style="justify-self:start">Try the live agent</button></div><!--card:end-->
     </div>
   </section>
 
@@ -550,6 +550,7 @@ function renderCase() {
       net.querySelectorAll("g.n").forEach(g => g.classList.toggle("dimmed", !!n && g.dataset.n !== n && ![...net.querySelectorAll("path.hot")].some(e => e.dataset.e.split(" ").includes(g.dataset.n)))) };
     net.addEventListener("pointerover", e => { const g = e.target.closest("g.n"); hot(g ? g.dataset.n : null) }); net.addEventListener("pointerleave", () => hot(null)) }
 }
+/*live:start*/
 /* ---------- live agent: Claude runs in the page, on the viewer's own account ---------- */
 let resolved = false, sample = null, liveFor = null, ctl = null, turns = [], busy = false, canTools = false;
 const ERR = { not_granted: "Live AI was not allowed for this page, so the live features are off for this visit.", rate_limited: "Claude is busy or a usage limit was reached. Try again in a little while.",
@@ -630,6 +631,7 @@ $("live").addEventListener("submit", e => { e.preventDefault(); ask($("q").value
   sample = s; resolved = true; if (!busy) resetLive(liveFor || current);
 })();
 
+/*live:end*/
 function renderDesk() { renderTop(); renderList(); renderCase() }
 /* After a filter or search, open the first matching alert so the case panel always follows the list. */
 function refilter() { renderTop(); const rows = C.filter(passes); if (rows.length && !rows.some(c => c.id === current)) { current = rows[0].id; lookup = null } renderList(); renderCase(); $("list").scrollTop = 0 }
