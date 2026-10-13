@@ -18,6 +18,9 @@ def main():
     data, _ = json.JSONDecoder().raw_decode(review[m.end():])
     data.pop("guidance", None)
     data["featured"] = FEATURED
+    # USD value of one unit of each currency, the same rates used to convert amounts in ibm_prepare.py,
+    # so the page can show each payment in the currency it was made in.
+    data["rates"] = json.loads(Path("results/ibm/usd_rates_HI-Small.json").read_text())["usd_per_unit"]
     page = Path("app/console_template.html").read_text()
     out = page.replace("/*DATA*/null", json.dumps(data, separators=(",", ":")).replace("</", "<\\/"))
     Path("app/site").mkdir(exist_ok=True)

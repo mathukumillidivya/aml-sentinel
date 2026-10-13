@@ -6,20 +6,21 @@ Money-laundering alert triage, measured on the public IBM AML benchmark. Rules
 raise alerts, a scoring model ranks them, an LLM agent writes the case file, and
 a person decides.
 
-**Live demo:** https://aml-sentinel-app.netlify.app (results, a workload calculator,
-and a case desk with 300 held-out alerts)
+**Live demo:** https://aml-sentinel-app.netlify.app (a case desk that replays the agent's
+investigation of 300 held-out alerts on a payment map, plus the results)
 
 | On held-out test days | HI-Small | LI-Small (nothing re-tuned) |
 |---|---|---|
 | Alerts from rules alone | 20,784, of which 93.5% false alarms | 27,297, of which 96.6% false alarms |
-| Workload cut keeping 80% of true alerts | 73% | 68% |
-| Workload cut keeping 90% | 60% | 61% |
+| Alert-volume cut keeping 80% of true alerts | 73% | 68% |
+| Alert-volume cut keeping 90% | 60% | 61% |
 | True alerts from labeled schemes in the alerts read first | 768 of 786 | 221 of 245 |
 
 **Findings**
 
-- **Ranking.** Rules plus a gradient-boosted model cut the alert workload by 73%
-  while keeping 80% of true alerts. On a second dataset the cut is 68%, and the
+- **Ranking.** Rules plus a gradient-boosted model cut the number of alerts to review
+  by 73% while keeping 80% of true alerts. This is alert volume on the benchmark;
+  investigator time was not measured. On a second dataset the cut is 68%, and the
   first dataset's model applied unchanged gives 67%.
 - **The agent is not the scorer.** On 300 held-out alerts the LLM agent ranked
   worse than the model (AUC 0.68 against 0.81; gap −0.13, 95% CI −0.19 to −0.07).
@@ -87,7 +88,7 @@ relationships; none uses the payment format.
 evidence features, trained on development days. Alerts are reviewed from the
 highest score down.
 
-| To keep this share of true alerts | Alerts to review | Workload cut | Precision |
+| To keep this share of true alerts | Alerts to review | Alert-volume cut | Precision |
 |---|---|---|---|
 | 50% | 955 | 95% | 71% |
 | 80% | 5,554 | 73% | 20% |
@@ -98,7 +99,7 @@ AUC 0.896, average precision 0.625 (rules alone: 0.065).
 
 Robustness checks:
 
-| Check | AUC | Workload cut at 80% retention |
+| Check | AUC | Alert-volume cut at 80% retention |
 |---|---|---|
 | All features | 0.896 | 73% |
 | Payment-format features removed | 0.893 | 73% |
@@ -129,7 +130,7 @@ transactions, laundering about 1 in 1,700, 117 labeled schemes): same rules,
 features, model settings, and time split, with nothing re-tuned. It also applies
 the model trained on HI-Small, unchanged, to LI-Small's test days.
 
-| Held-out test days | Alerts | False alarms | AUC | Workload cut keeping 80% | Keeping 90% |
+| Held-out test days | Alerts | False alarms | AUC | Alert-volume cut keeping 80% | Keeping 90% |
 |---|---|---|---|---|---|
 | HI-Small | 20,784 | 93.5% | 0.896 | 73% | 60% |
 | LI-Small, model trained on LI-Small | 27,297 | 96.6% | 0.840 | 68% | 61% |
@@ -235,7 +236,7 @@ mix, with 95% Wilson confidence intervals on every rate.
 rebuilds it). It shows the 300 held-out alerts the agent investigated: the queue
 ranked by the scoring model, and for each alert the activity summary, the
 first-time payment network, the agent's case file and audit trail, and decision
-buttons. A results view carries the measured figures and a workload calculator.
+buttons. A results view carries the measured figures and an alert-volume calculator.
 Benchmark labels stay hidden until the viewer asks for them.
 
 `app/site/index.html` is the standalone build served at the demo address: an

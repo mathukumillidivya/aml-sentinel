@@ -114,6 +114,7 @@ p { margin: 0 0 14px; max-width: 66ch; }
 .case-top h1 { font-size: clamp(36px, 4vw, 54px); font-weight: 600; letter-spacing: -0.02em; }
 .case-top .facts { display: flex; flex-wrap: wrap; gap: 8px 22px; color: var(--dim); font-size: 14px; }
 .case-top .facts b { color: #fff; font-weight: 600; }
+.case-top .facts .dimnote { font: 500 11.5px var(--mono); color: var(--faint); align-self: center; }
 .case-top .acts { display: flex; gap: 10px; padding-bottom: 8px; grid-column: 2; grid-row: 1; }
 .case-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 22px; }
 .mapcard { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; position: relative; min-width: 0; }
@@ -143,7 +144,9 @@ p { margin: 0 0 14px; max-width: 66ch; }
 .ledger table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .ledger th { text-align: left; font: 500 12px var(--mono); color: var(--faint); padding: 8px 10px; border-bottom: 1px solid var(--line); }
 .ledger td { padding: 9px 10px; border-bottom: 1px solid rgba(29,84,67,.6); transition: background .5s, color .5s; }
-.ledger td.num { font-family: var(--mono); text-align: right; }
+.ledger td.num { font-family: var(--mono); text-align: right; white-space: nowrap; }
+.ledger td.usdc { color: var(--dim); }
+.tscroll { overflow-x: auto; }
 .ledger tr.off td { color: var(--faint); }
 .ledger tr.lit td { background: rgba(255,194,61,.08); }
 .ledger td .acct { font-family: var(--mono); cursor: pointer; }
@@ -261,6 +264,15 @@ const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const F = DATA.facts, C = DATA.cases, CI = Object.fromEntries(C.map(c => [c.id, c]));
 const pct = (x, d = 0) => (x * 100).toFixed(d) + "%";
 const usd = x => x >= 1e6 ? "$" + (x / 1e6).toFixed(1) + "M" : x >= 1e3 ? "$" + (x / 1e3).toFixed(x >= 1e4 ? 0 : 1) + "K" : "$" + Math.round(x);
+// Amounts are stored in US dollars, converted at the rates the dataset's own cross-currency payments imply.
+// The original amount is recovered with the same rate, so each payment can be shown in the currency it was paid in.
+const SYM = { "US Dollar": "$", "Euro": "€", "UK Pound": "£", "Yen": "¥", "Yuan": "CN¥", "Rupee": "₹", "Ruble": "₽", "Swiss Franc": "CHF ", "Australian Dollar": "A$",
+  "Canadian Dollar": "C$", "Mexican Peso": "MX$", "Saudi Riyal": "SAR ", "Shekel": "₪", "Bitcoin": "₿", "Brazil Real": "R$" };
+const orig = p => p.usd / (DATA.rates[p.currency] || 1);
+const compact = (x, sym) => x >= 1e6 ? sym + (x / 1e6).toFixed(1) + "M" : x >= 1e3 ? sym + (x / 1e3).toFixed(x >= 1e4 ? 0 : 1) + "K" : sym + (x >= 100 || sym === "₿" ? x.toFixed(x < 10 ? 2 : 0) : x.toFixed(2));
+const paid = p => compact(orig(p), SYM[p.currency] || (p.currency + " "));
+const paidFull = p => (SYM[p.currency] || p.currency + " ") + orig(p).toLocaleString("en-US", { minimumFractionDigits: p.currency === "Bitcoin" ? 4 : 2, maximumFractionDigits: p.currency === "Bitcoin" ? 4 : 2 });
+const isUsd = p => p.currency === "US Dollar";
 const TYP = { fan_out: "Fan-out", fan_in: "Fan-in", scatter_gather: "Scatter-gather", gather_scatter: "Gather-scatter", cycle: "Cycle", stack: "Stack", bipartite: "Bipartite", random: "Random", other: "Other", none: "No pattern" };
 const sleep = ms => new Promise(r => setTimeout(r, reduced ? 0 : ms));
 const tip = $("#tip");
@@ -321,7 +333,7 @@ function viewHome(v) {
     </div></div>
   </section>
   <div class="wrap"><div class="strip">
-    <div><b>${pct(F.keep80.workload_reduction)}</b><span>less alert reading, keeping 80% of real laundering alerts</span></div>
+    <div><b>${pct(F.keep80.workload_reduction)}</b><span>fewer alerts to review on the benchmark, still keeping 80% of real laundering alerts (alert volume, not timed investigator hours)</span></div>
     <div><b>${pct(F.faith.case_files_fully_traceable.rate)}</b><span>of the agent's case files trace every account and dollar back to the ledger</span></div>
     <div><b>${F.labeled_top}<em> / ${F.labeled}</em></b><span>alerts from labeled laundering schemes are in the slice read first</span></div>
     <div><b>${F.auc_agent.toFixed(2)}<em> vs ${F.auc_model.toFixed(2)}</em></b><span>the agent ranks alerts worse than the model (AUC), so the model ranks and the agent writes</span></div>
@@ -330,7 +342,7 @@ function viewHome(v) {
     <div class="head2"><h2>From ${F.alerts.toLocaleString()} alerts to a signed case file</h2><p>Three held-out days of the IBM benchmark: 5 million synthetic transactions, 1 in 1,000 of them laundering.</p></div>
     <div class="flow">
       <div><span class="k">1. Rules</span><h3>Raise the alerts</h3><p>Four auditable rules on first-time relationships between accounts.</p><div class="num">${F.alerts.toLocaleString()}</div><p>alerts, ${pct(F.precision, 1)} real</p></div>
-      <div><span class="k">2. Model</span><h3>Rank them</h3><p>Gradient-boosted trees on 27 evidence features. No cost per alert.</p><div class="num">${pct(F.keep80.workload_reduction)}</div><p>less reading at 80% recall</p></div>
+      <div><span class="k">2. Model</span><h3>Rank them</h3><p>Gradient-boosted trees on 27 evidence features. No cost per alert.</p><div class="num">${pct(F.keep80.workload_reduction)}</div><p>fewer alerts to review at 80% recall</p></div>
       <div class="ai"><span class="k">3. AI agent</span><h3>Trace the money</h3><p>Claude Haiku 4.5 with read-only ledger tools follows payments and writes the case file.</p><div class="num gold">${F.seconds.toFixed(0)}s</div><p>per case, ${Math.round(F.tokens_in / 1000)}K tokens read</p></div>
       <div><span class="k">4. Person</span><h3>Decide</h3><p>The investigator reads the evidence and signs. The agent recommends; it never decides.</p><div class="num">100%</div><p>of decisions human</p></div>
     </div>
@@ -364,7 +376,7 @@ function heroNet(canvas) {
     parts = []; clusters.forEach(k => k.edges.forEach(e => { for (let j = 0; j < (k.feat ? 3 : 1); j++) parts.push({ k, e, t: rnd(), v: 0.002 + rnd() * 0.004 }); }));
     const tag = $("#tag"), f = clusters.find(k => k.feat);
     if (tag && f) { const out = f.c.pay.filter(p => p.from === f.c.acct).reduce((a, p) => a + p.usd, 0), inn = f.c.pay.filter(p => p.to === f.c.acct).reduce((a, p) => a + p.usd, 0);
-      tag.innerHTML = `Agent traced ${f.c.acct}<b>${f.c.pay.filter(p => p.to === f.c.acct).length} payments in (${usd(inn)}), ${f.c.pay.filter(p => p.from === f.c.acct).length} out (${usd(out)})</b>Escalated: ${TYP[f.c.typ]}`;
+      tag.innerHTML = `Agent traced ${f.c.acct}<b>${f.c.pay.filter(p => p.to === f.c.acct).length} payments in (≈${usd(inn)}), ${f.c.pay.filter(p => p.from === f.c.acct).length} out (≈${usd(out)}) in USD terms</b>Escalated: ${TYP[f.c.typ]}`;
       tag.style.left = Math.min(W - 300, f.N[0].x + 30) + "px"; tag.style.top = (narrow ? 20 : f.N[0].y + 150) + "px"; }
   }
   build();
@@ -413,14 +425,14 @@ function viewCase(id) {
   const out = c.pay.filter(p => p.from === c.acct), inn = c.pay.filter(p => p.to === c.acct);
   el.innerHTML = `
     <div class="case-top"><div><span class="pill ${c.disp === "escalate" ? "esc" : ""}">alert ${c.id}</span><h1>${c.acct}</h1></div>
-      <div class="facts"><span>Window <b>${esc(c.win)}</b></span><span>Rules <b>${c.rules.map(r => esc(r)).join(", ")}</b></span><span>Model risk <b>${c.pct}th percentile</b></span><span>Paid out <b>${usd(c.made.usd)}</b></span><span>Received <b>${usd(c.all.usd_received)}</b></span></div>
+      <div class="facts"><span>Window <b>${esc(c.win)}</b></span><span>Rules <b>${c.rules.map(r => esc(r)).join(", ")}</b></span><span>Model risk <b>${c.pct}th percentile</b></span><span>Paid out <b>≈${usd(c.all.usd_paid)}</b> in ${[...new Set(out.map(p => p.currency))].map(esc).join(", ") || "nothing"}</span><span>Received <b>≈${usd(c.all.usd_received)}</b> in ${[...new Set(inn.map(p => p.currency))].map(esc).join(", ") || "nothing"}</span><span class="dimnote">USD equivalents</span></div>
       <div class="acts"><button class="btn gold" id="again">Replay the agent</button></div></div>
     <div class="case-grid">
       <div class="main-col">
         <div class="mapcard"><div class="bar"><span class="now" id="now">Agent ready</span><span class="key"><span><i style="background:var(--gold)"></i>traced by the agent</span><span><i style="background:var(--mint)"></i>money moving</span></span></div>
           <svg id="map" viewBox="0 0 900 540" role="img" aria-label="Payment network around ${c.acct}"></svg><div class="peek" id="peek"></div></div>
         <div class="trail"><h3>Agent trail <small>tool calls, as the agent made them</small></h3><div id="trail"></div></div>
-        <div class="ledger"><h3>Payments in the alert window</h3><table><thead><tr><th>Time</th><th>From</th><th>To</th><th class="num" style="text-align:right">Amount</th><th class="hide-s">Currency</th><th class="hide-s">Format</th></tr></thead><tbody id="ledg"></tbody></table></div>
+        <div class="ledger"><h3>Payments in the alert window <small>amount as paid; USD at the dataset's implied rates</small></h3><div class="tscroll"><table><thead><tr><th>Time</th><th>From</th><th>To</th><th class="num" style="text-align:right">Amount paid</th><th class="num" style="text-align:right">In USD</th><th class="hide-s">Currency</th><th class="hide-s">Format</th></tr></thead><tbody id="ledg"></tbody></table></div></div>
       </div>
       <div class="side-col">
         <div class="file" id="file"></div>
@@ -428,14 +440,14 @@ function viewCase(id) {
     </div>`;
   $("#again").onclick = () => { token++; play(c, token); };
   drawMap(c); drawFile(c, false);
-  $("#ledg").innerHTML = c.pay.map((p, i) => `<tr id="lg${i}" class="off"><td class="mono">${esc(p.time)}</td><td><span class="acct ${p.from === c.acct ? "me" : ""}" data-a="${p.from}">${p.from}</span></td><td><span class="acct ${p.to === c.acct ? "me" : ""}" data-a="${p.to}">${p.to}</span></td><td class="num">${usd(p.usd)}</td><td class="hide-s">${esc(p.currency)}</td><td class="hide-s">${esc(p.format)}</td></tr>`).join("");
+  $("#ledg").innerHTML = c.pay.map((p, i) => `<tr id="lg${i}" class="off"><td class="mono">${esc(p.time)}</td><td><span class="acct ${p.from === c.acct ? "me" : ""}" data-a="${p.from}">${p.from}</span></td><td><span class="acct ${p.to === c.acct ? "me" : ""}" data-a="${p.to}">${p.to}</span></td><td class="num">${paidFull(p)}</td><td class="num usdc">${isUsd(p) ? "–" : "≈ " + usd(p.usd)}</td><td class="hide-s">${esc(p.currency)}</td><td class="hide-s">${esc(p.format)}</td></tr>`).join("");
   $$("#ledg .acct").forEach(a => { a.onmouseenter = e => showTip(acctTip(c, a.dataset.a), e); a.onmouseleave = hideTip; });
   play(c, my);
 }
 function acctTip(c, a) {
-  if (a === c.acct) return `<b>${a}</b> the alerted account<br>${c.made.payments} first-time payments out (${usd(c.made.usd)}), ${c.recv.payments} in (${usd(c.recv.usd)})<br>${c.hist.payments} payments in the ${c.hist.days_of_data} days before`;
+  if (a === c.acct) return `<b>${a}</b> the alerted account<br>${c.made.payments} first-time payments out (≈${usd(c.made.usd)} in USD), ${c.recv.payments} in (≈${usd(c.recv.usd)})<br>${c.hist.payments} payments in the ${c.hist.days_of_data} days before`;
   const o = DATA.others[a]; if (!o) return a;
-  return `<b>${a}</b><br>first-time out: ${o.m[0]} payments (${usd(o.m[2])})<br>first-time in: ${o.r[0]} payments (${usd(o.r[2])})<br>${o.h[0]} payments in the ${o.h[1]} days before`;
+  return `<b>${a}</b><br>first-time out: ${o.m[0]} payments (≈${usd(o.m[2])} in USD)<br>first-time in: ${o.r[0]} payments (≈${usd(o.r[2])})<br>${o.h[0]} payments in the ${o.h[1]} days before`;
 }
 function drawMap(c) {
   const narrow = ($("#map").getBoundingClientRect().width || 900) < 600;
@@ -446,7 +458,7 @@ function drawMap(c) {
   const edges = c.pay.map((p, i) => { const a = N[ix[p.from]], b = N[ix[p.to]], mx = (a.x + b.x) / 2 - (b.y - a.y) * 0.12, my = (a.y + b.y) / 2 + (b.x - a.x) * 0.12;
     const w = 1.2 + Math.log10(p.usd + 10) * 0.9;
     return `<path class="edge base hide" id="eb${i}" d="M${a.x},${a.y} Q${mx},${my} ${b.x},${b.y}" stroke="var(--mint-dim)" stroke-width="${w}"/><path class="edge flow hide" id="ef${i}" d="M${a.x},${a.y} Q${mx},${my} ${b.x},${b.y}" stroke="var(--mint)" stroke-width="${w * 0.7}"/>
-      <text class="amt hide" id="ea${i}" x="${(a.x + 2 * mx + b.x) / 4}" y="${(a.y + 2 * my + b.y) / 4 - 6}" text-anchor="middle">${usd(p.usd)}</text>`; }).join("");
+      <text class="amt hide" id="ea${i}" x="${(a.x + 2 * mx + b.x) / 4}" y="${(a.y + 2 * my + b.y) / 4 - 6}" text-anchor="middle">${paid(p)}</text>`; }).join("");
   const C0 = N[0];
   const label = n => { if (n === C0) return `<text x="${n.x}" y="${n.y + rad(n) + 16}" text-anchor="middle">${n.id}</text>`;
     const dx = n.x - C0.x, dy = n.y - C0.y, d = Math.hypot(dx, dy) || 1, r = rad(n) + 8, ux = dx / d, uy = dy / d;
@@ -528,7 +540,7 @@ function viewResults(v) {
     ${line(DATA.curves.model.map(([x, y]) => [x, y]), "var(--mint)", 3)}${line(DATA.curves.agent.map(([x, y]) => [x, y]), "var(--gold)", 3)}
     <text x="${px(0.22)}" y="${py(0.86)}" style="fill:var(--mint)">model, AUC ${F.auc_model.toFixed(2)}</text><text x="${px(0.5)}" y="${py(0.58)}" style="fill:var(--gold)">agent, AUC ${F.auc_agent.toFixed(2)}</text></svg>`;
   v.innerHTML = `<div class="wrap page"><div class="page-head"><h1>Results</h1><p>Held-out test days (7 to 9) of IBM HI-Small. Everything was tuned on days 4 and 5. Every rate comes with a confidence interval in the repository.</p></div>
-  <div class="cards3"><div><b>${pct(F.keep80.workload_reduction)}</b><span>workload cut keeping 80% of true alerts (${pct(F.keep90.workload_reduction)} at 90%)</span></div>
+  <div class="cards3"><div><b>${pct(F.keep80.workload_reduction)}</b><span>alert-volume reduction on the benchmark keeping 80% of true alerts (${pct(F.keep90.workload_reduction)} at 90%). Investigator time was not measured.</span></div>
     <div><b>${F.auc_full.toFixed(2)}</b><span>AUC of the ranking model on all ${F.alerts.toLocaleString()} test alerts</span></div>
     <div><b>${pct(F.faith.case_files_fully_traceable.rate)}</b><span>of ${F.faith.case_files_checked} case files fully traceable to retrieved evidence</span></div></div>
   <div class="two section"><div class="chart"><h3 style="margin-bottom:10px">The model: read less, keep the real ones</h3>${curve}</div>

@@ -1,0 +1,20 @@
+{
+ "source": "HI-Small, implied by the dataset's own cross-currency payments (src/ibm_prepare.py)",
+ "usd_per_unit": {
+  "Australian Dollar": 0.7078142694295919,
+  "Bitcoin": 11874.999999999998,
+  "Brazil Real": 0.17710085849756796,
+  "Canadian Dollar": 0.757977714866847,
+  "Euro": 1.1717834539993446,
+  "Mexican Peso": 0.04729675385557055,
+  "Ruble": 0.01285280962330482,
+  "Rupee": 0.013615816131492639,
+  "Saudi Riyal": 0.26658846778824696,
+  "Shekel": 0.2961208153743032,
+  "Swiss Franc": 1.092896174427715,
+  "UK Pound": 1.2916558984057387,
+  "US Dollar": 1.0,
+  "Yen": 0.009487666033186501,
+  "Yuan": 0.14930721351280496
+ }
+}
