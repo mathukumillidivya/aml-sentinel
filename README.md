@@ -9,6 +9,8 @@ a person decides.
 **Live demo:** https://aml-sentinel-app.netlify.app (a case desk that replays the agent's
 investigation of 300 held-out alerts on a payment map, plus the results)
 
+**Reproduce:** `python reproduce.py` re-scores every saved run and checks each published number (no API key). Full steps, the frozen commit and the data are in [REPRODUCE.md](REPRODUCE.md). A 40-second demo video is on the site's Reproduce page.
+
 | On held-out test days | HI-Small | LI-Small (nothing re-tuned) |
 |---|---|---|
 | Alerts from rules alone | 20,784, of which 93.5% false alarms | 27,297, of which 96.6% false alarms |

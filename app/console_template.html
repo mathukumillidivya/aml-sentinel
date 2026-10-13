@@ -36,7 +36,7 @@ p { margin: 0 0 14px; max-width: 66ch; }
 .top .wrap { display: flex; align-items: center; gap: 30px; height: 64px; }
 .brand { display: flex; align-items: center; gap: 12px; color: #fff; text-decoration: none; font: 600 21px var(--serif); }
 .brand svg { width: 30px; height: 30px; }
-.nav { display: flex; gap: 4px; }
+.nav { display: flex; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .nav a { color: var(--dim); text-decoration: none; padding: 7px 14px; border-radius: 999px; font-weight: 500; white-space: nowrap; }
 .nav a:hover { color: #fff; }
 .nav a[aria-current="page"] { color: var(--bg); background: var(--mint); }
@@ -236,7 +236,7 @@ footer { padding: 28px 0 44px; color: var(--faint); font-size: 13px; border-top:
   .wrap { padding: 0 16px; }
   .top .wrap { gap: 10px; }
   .brand span { display: none; }
-  .nav a { padding: 6px 10px; font-size: 14px; }
+  .nav a { padding: 6px 8px; font-size: 13.5px; }
   .flow { grid-template-columns: minmax(0, 1fr); }
   .case { padding: 20px 16px 40px; }
   .case-top { grid-template-columns: minmax(0, 1fr); }
@@ -245,17 +245,39 @@ footer { padding: 28px 0 44px; color: var(--faint); font-size: 13px; border-top:
   #trail { grid-template-columns: minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+:root { --rp-mono: var(--mono); --rp-accent: var(--gold); --rp-dim: var(--dim); --rp-line: var(--line); --rp-link: var(--mint); --rp-codebg: #021812; --rp-codefg: #D9F7EA; --rp-radius: 16px;
+  --rp-hfont: 600 clamp(36px, 4.4vw, 60px)/1.04 var(--serif); --rp-h2font: 600 26px/1.15 var(--serif); }
+/* reproduce page: colours come from --rp-* set per site */
+.rp { padding: 48px 0 72px; }
+.rp-k { font: 600 12px var(--rp-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--rp-accent); }
+.rp-h { font: var(--rp-hfont); letter-spacing: -.02em; margin: 10px 0 12px; line-height: 1.04; }
+.rp-lede { color: var(--rp-dim); font-size: 17px; max-width: 46em; }
+.rp-cmd { position: relative; margin: 24px 0 26px; background: var(--rp-codebg); color: var(--rp-codefg); border-radius: var(--rp-radius); max-width: 760px; }
+.rp-cmd pre { margin: 0; padding: 18px 20px; overflow-x: auto; font: 500 14px/1.7 var(--rp-mono); }
+.rp-copy { position: absolute; top: 10px; right: 10px; font: 600 12px var(--rp-mono); padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,.35); background: transparent; color: var(--rp-codefg); cursor: pointer; }
+.rp-list { display: grid; gap: 0; border-top: 1px solid var(--rp-line); margin: 0; }
+.rp-list div { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--rp-line); }
+.rp-list dt { font-weight: 700; }
+.rp-list dd { margin: 0; color: var(--rp-dim); overflow-wrap: anywhere; }
+.rp-list a { color: var(--rp-link); }
+.rp-list code { font: 500 13px var(--rp-mono); }
+.rp-video { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 28px; align-items: start; margin-top: 44px; }
+.rp-video h2 { font: var(--rp-h2font); margin: 8px 0; }
+.rp-video p { color: var(--rp-dim); }
+.rp-video video { width: 100%; height: auto; border-radius: var(--rp-radius); background: #000; box-shadow: 0 20px 40px -24px rgba(0,0,0,.6); }
+.rp-foot a { color: inherit; }
+@media (max-width: 760px) { .rp-list div, .rp-video { grid-template-columns: minmax(0, 1fr); gap: 4px; } .rp-video { gap: 14px; } }
 </style>
 </head>
 <body>
 <header class="top"><div class="wrap">
   <a class="brand" href="#/" aria-label="AML Sentinel home"><svg viewBox="0 0 30 30" aria-hidden="true"><circle cx="7" cy="22" r="3.2" fill="#2EF2A6"/><circle cx="15" cy="9" r="3.2" fill="#2EF2A6"/><circle cx="23" cy="20" r="4.2" fill="#FFC23D"/><path d="M7 22 L15 9 L23 20 M7 22 L23 20" stroke="#2EF2A6" stroke-width="1.6" fill="none"/></svg><span>AML Sentinel</span></a>
-  <nav class="nav" aria-label="Main"><a href="#/desk" data-r="desk">Case desk</a><a href="#/results" data-r="results">Results</a><a href="#/how" data-r="how">How it works</a></nav>
+  <nav class="nav" aria-label="Main"><a href="#/desk" data-r="desk">Case desk</a><a href="#/results" data-r="results">Results</a><a href="#/how" data-r="how">How it works</a><a href="#/reproduce" data-r="reproduce">Reproduce</a></nav>
   <span class="meta">IBM AML benchmark, held-out days</span>
 </div></header>
 <main id="view"></main>
 <div id="tip" role="tooltip"></div>
-<footer><div class="wrap">Data: IBM Transactions for Anti Money Laundering (Altman et al., NeurIPS 2023), synthetic. Agent: Claude Haiku 4.5 with read-only ledger tools. Built by Divya Sri.</div></footer>
+<footer><div class="wrap">Data: IBM Transactions for Anti Money Laundering (Altman et al., NeurIPS 2023), synthetic. Agent: Claude Haiku 4.5 with read-only ledger tools. Built by Divya Sri. <span class="rp-foot"><a href="#/reproduce">Reproduce these results</a> · <a href="https://github.com/mathukumillidivya/aml-sentinel" target="_blank" rel="noopener">Source code</a> · <a href="#/reproduce" onclick="setTimeout(() => document.getElementById('tour')?.scrollIntoView(), 50)">Demo video</a></span></div></footer>
 <script>
 const DATA = /*DATA*/null;
 const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -289,8 +311,46 @@ function route() {
   if (page === "desk" || page === "case") viewDesk(v, CI[arg] ? arg : DATA.featured);
   else if (page === "results") viewResults(v);
   else if (page === "how") viewHow(v);
+  else if (page === "reproduce") { v.innerHTML = reproHtml(REPRO); wireRepro(v); }
   else viewHome(v);
 }
+const REPRO = {
+  repo: "https://github.com/mathukumillidivya/aml-sentinel", commit: "56a2bb5", time: "under a minute", install: "pip install -r requirements.txt",
+  frozen: "The agent's prompt, tools and escalation cut-off were fixed here, from development days only, before the held-out days were run.",
+  dataset: 'IBM Transactions for Anti Money Laundering, HI-Small and LI-Small (Altman et al., NeurIPS 2023), synthetic, from <a href="https://www.kaggle.com/datasets/ealtman2019/ibm-transactions-for-anti-money-laundering-aml" target="_blank" rel="noopener">Kaggle</a> under CDLA-Sharing-1.0. Days 4 and 5 for development, 7 to 9 held out. The agent re-scoring needs no download; the rules and model figures need the Kaggle files.',
+  raw: [["results/ibm/agent_runs/ibm-test-haiku/", "every tool call, verdict and case file for the 300 held-out alerts"], ["results/ibm/", "alerts, scores and the rules and model results"]],
+  scoring: [["src/ibm_agent_eval.py", "ranking, decisions and bootstrap intervals"], ["src/ibm_faithfulness.py", "checks every account and amount against the evidence"], ["reproduce.py", "re-scores the saved runs and compares"]],
+  rerun: "From the Kaggle files: prepare, rules, model, then the agent on the held-out days (about $6.50 of API use).",
+  videoTitle: "A 40-second tour", videoNote: "The home page, the agent tracing a scatter-gather case on the payment map, and the results. Recorded from this site.",
+};
+/* ---------- reproduce these results */
+function reproHtml(R) {
+  const gh = p => `${R.repo}/${p.endsWith("/") ? "tree" : "blob"}/main/${p.replace(/\/$/, "")}`;
+  const link = (href, text) => `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+  const cmd = `git clone ${R.repo}\ncd ${R.repo.split("/").pop()}\n${R.install ? R.install + "\n" : ""}python reproduce.py`;
+  const rows = [
+    ["Repository", link(R.repo, R.repo.replace("https://", ""))],
+    ["Frozen evaluation commit", `${link(`${R.repo}/tree/${R.commit}`, `<code>${R.commit}</code>`)}. ${R.frozen}`],
+    ["Dataset", R.dataset],
+    ["Raw results", R.raw.map(([p, t]) => `${link(gh(p), `<code>${p}</code>`)} ${t}`).join("<br>")],
+    ["Scoring code", R.scoring.map(([p, t]) => `${link(gh(p), `<code>${p}</code>`)} ${t}`).join("<br>")],
+    ["Re-run from scratch", `${R.rerun} Steps in ${link(gh("REPRODUCE.md"), "REPRODUCE.md")}.`],
+  ];
+  return `<section class="rp"><div class="wrap">
+    <span class="rp-k">Reproduce these results</span>
+    <h1 class="rp-h">Every number here can be checked.</h1>
+    <p class="rp-lede">The figures on this site come from saved runs in the repository. One command re-scores them with the same scoring code and checks each figure against what is published. No API key, ${R.time}.</p>
+    <div class="rp-cmd"><pre><code>${cmd}</code></pre><button class="rp-copy" type="button">Copy</button></div>
+    <dl class="rp-list">${rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
+    <div class="rp-video" id="tour"><div><span class="rp-k">Demo video</span><h2>${R.videoTitle}</h2><p>${R.videoNote}</p></div>
+      <video controls preload="none" playsinline poster="demo-poster.jpg" width="1280" height="720"><source src="demo.mp4" type="video/mp4">Your browser cannot play this video. <a href="demo.mp4">Download it</a>.</video></div>
+  </div></section>`;
+}
+function wireRepro(root) {
+  const b = root.querySelector(".rp-copy"); if (!b) return;
+  b.onclick = async () => { try { await navigator.clipboard.writeText(root.querySelector(".rp-cmd code").textContent); b.textContent = "Copied"; } catch { b.textContent = "Select and copy"; } setTimeout(() => b.textContent = "Copy", 1600); };
+}
+
 addEventListener("hashchange", route);
 
 /* ------------------------------------------------ force layout for a small payment network */
@@ -329,7 +389,7 @@ function viewHome(v) {
     <div class="wrap"><div class="copy">
       <h1>Follow<br><em>the money.</em></h1>
       <p class="lede">Banks' rules raise ${F.per_day.toLocaleString()} money-laundering alerts a day and ${pct(1 - F.precision, 1)} of them are innocent. AML Sentinel ranks them, sends an AI agent to trace where the money went, and drafts the case file a human investigator signs.</p>
-      <div class="acts"><a class="btn go" href="#/case/${fc.id}">Watch the agent trace a case</a><a class="btn" href="#/results">See the results</a></div>
+      <div class="acts"><a class="btn go" href="#/case/${fc.id}">Watch the agent trace a case</a><a class="btn" href="#/results">See the results</a><a class="btn" href="#/reproduce" onclick="setTimeout(() => document.getElementById('tour')?.scrollIntoView(), 50)">▶ 40-second tour</a></div>
     </div></div>
   </section>
   <div class="wrap"><div class="strip">
