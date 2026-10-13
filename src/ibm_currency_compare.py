@@ -1,4 +1,4 @@
-"""Compare the original and the revised (write-up v2) case files on the same 60 held-out alerts.
+"""Compare the original and the revised (write-up v2) case files on the same 40 held-out alerts.
 
 Both are scored the same way:
   code      ibm_currency.check_amounts: amounts written with a currency label that match no payment in that currency

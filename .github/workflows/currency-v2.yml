@@ -1,11 +1,11 @@
 name: Currency fix (write-up v2)
-# Re-run the agent with version 2 of the write-up step on 60 held-out alerts with non-dollar payments, then score
+# Re-run the agent with version 2 of the write-up step on 40 held-out alerts with non-dollar payments, then score
 # the original and revised case files the same way (code currency check, and judge v2 on both). The original run
 # and its scores are not touched.
 on:
   workflow_dispatch:
     inputs:
-      token_budget: {default: "1500000"}
+      token_budget: {default: "1000000"}
       judge_budget: {description: "US$ per run for judge v2", default: "0.45"}
 permissions:
   contents: write
@@ -28,21 +28,39 @@ jobs:
           git --work-tree=data/ibm_prepared checkout FETCH_HEAD -- .
           git reset -q
       - run: python -m pytest -q tests
-      - name: Investigate the same 60 alerts with write-up v2
-        run: python src/ibm_agent.py --provider anthropic --model claude-haiku-4-5-20251001 --split test --currency-v2 --alert-ids results/ibm/currency_v2_alerts.txt --token-budget "${{ inputs.token_budget }}" --run-id ibm-test-haiku-currency-v2
-      - name: Judge v2 on both runs, same alerts
+      - name: Judge v2 on the original case files first (a failure here stops before the agent spends anything)
         run: |
-          python src/ibm_narrative_judge.py --run ibm-test-haiku-currency-v2 --judge-v2 --tag v2 --ids results/ibm/currency_v2_alerts.txt --budget "${{ inputs.judge_budget }}"
-          python src/ibm_narrative_judge.py --run ibm-test-haiku --judge-v2 --tag v2 --ids results/ibm/currency_v2_alerts.txt --budget "${{ inputs.judge_budget }}"
+          set -o pipefail
+          mkdir -p results/ibm/logs
+          python src/ibm_narrative_judge.py --run ibm-test-haiku --judge-v2 --tag v2 --ids results/ibm/currency_v2_alerts.txt --budget "${{ inputs.judge_budget }}" 2>&1 | tail -60 > results/ibm/logs/judge_v2_original.log
+      - name: Investigate the same 40 alerts with write-up v2
+        run: |
+          set -o pipefail
+          mkdir -p results/ibm/logs
+          python src/ibm_agent.py --provider anthropic --model claude-haiku-4-5-20251001 --split test --currency-v2 --alert-ids results/ibm/currency_v2_alerts.txt --token-budget "${{ inputs.token_budget }}" --run-id ibm-test-haiku-currency-v2 2>&1 | tail -40 > results/ibm/logs/currency_v2_agent.log
+      - name: Save the agent run before scoring it
+        run: |
+          git config user.name "Divya Sri"
+          git config user.email "hellosweety789@gmail.com"
+          git add -f results/ibm/agent_runs/ibm-test-haiku-currency-v2 results/ibm/logs
+          git commit -m "Write-up v2 agent run on 40 held-out alerts"
+          git pull --rebase origin main
+          git push origin HEAD:main
+      - name: Judge v2 on the revised case files
+        run: |
+          set -o pipefail
+          python src/ibm_narrative_judge.py --run ibm-test-haiku-currency-v2 --judge-v2 --tag v2 --ids results/ibm/currency_v2_alerts.txt --budget "${{ inputs.judge_budget }}" 2>&1 | tail -60 > results/ibm/logs/judge_v2_revised.log
       - name: Compare
         if: always()
-        run: python src/ibm_currency_compare.py
+        run: python src/ibm_currency_compare.py 2>&1 | tail -80 > results/ibm/logs/compare.log
       - name: Save
         if: always()
         run: |
           git config user.name "Divya Sri"
           git config user.email "hellosweety789@gmail.com"
-          git add -f results/ibm/agent_runs/ibm-test-haiku-currency-v2 results/ibm/agent_runs/ibm-test-haiku/narrative_judge_v2.* results/ibm/currency_v2_comparison.json || true
-          git commit -m "Write-up v2 on 60 held-out alerts: run, judge and comparison" || exit 0
+          for f in results/ibm/agent_runs/ibm-test-haiku-currency-v2 results/ibm/agent_runs/ibm-test-haiku/narrative_judge_v2.json results/ibm/agent_runs/ibm-test-haiku/narrative_judge_v2.jsonl results/ibm/currency_v2_comparison.json results/ibm/logs; do
+            [ -e "$f" ] && git add -f "$f"
+          done
+          git commit -m "Write-up v2 on 40 held-out alerts: judge and comparison" || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
