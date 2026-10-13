@@ -344,7 +344,7 @@ function reproHtml(R) {
     <div class="rp-cmd"><pre><code>${cmd}</code></pre><button class="rp-copy" type="button">Copy</button></div>
     <dl class="rp-list">${rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
     <div class="rp-video" id="tour"><div><span class="rp-k">Demo video</span><h2>${R.videoTitle}</h2><p>${R.videoNote}</p></div>
-      <video controls preload="none" playsinline poster="demo-poster.jpg" width="1280" height="720"><source src="demo.mp4" type="video/mp4">Your browser cannot play this video. <a href="demo.mp4">Download it</a>.</video></div>
+      <video controls preload="none" playsinline poster="demo-poster.jpg" width="1280" height="720"><source src="demo.mp4?v=2" type="video/mp4">Your browser cannot play this video. <a href="demo.mp4?v=2">Download it</a>.</video></div>
   </div></section>`;
 }
 function wireRepro(root) {
