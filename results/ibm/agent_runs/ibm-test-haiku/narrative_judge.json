@@ -1,0 +1,125 @@
+{
+  "judge_model": "claude-haiku-4-5-20251001",
+  "case_files_judged": 257,
+  "accurate": {
+    "count": 133,
+    "of": 257,
+    "rate": 0.5175,
+    "ci95": [
+      0.4566,
+      0.5779
+    ]
+  },
+  "minor_errors": {
+    "count": 2,
+    "of": 257,
+    "rate": 0.0078,
+    "ci95": [
+      0.0021,
+      0.0279
+    ]
+  },
+  "material_errors": {
+    "count": 122,
+    "of": 257,
+    "rate": 0.4747,
+    "ci95": [
+      0.4145,
+      0.5357
+    ]
+  },
+  "currency_ok": {
+    "count": 220,
+    "of": 257,
+    "rate": 0.856,
+    "ci95": [
+      0.8079,
+      0.8937
+    ]
+  },
+  "innocent_explanation": {
+    "specific": {
+      "count": 179,
+      "of": 257,
+      "rate": 0.6965,
+      "ci95": [
+        0.6377,
+        0.7495
+      ]
+    },
+    "generic": {
+      "count": 48,
+      "of": 257,
+      "rate": 0.1868,
+      "ci95": [
+        0.1439,
+        0.2389
+      ]
+    },
+    "implausible": {
+      "count": 18,
+      "of": 257,
+      "rate": 0.07,
+      "ci95": [
+        0.0448,
+        0.108
+      ]
+    },
+    "missing": {
+      "count": 12,
+      "of": 257,
+      "rate": 0.0467,
+      "ci95": [
+        0.0269,
+        0.0798
+      ]
+    }
+  },
+  "supports_own_decision": {
+    "count": 209,
+    "of": 257,
+    "rate": 0.8132,
+    "ci95": [
+      0.7611,
+      0.8561
+    ]
+  },
+  "error_types": {
+    "unsupported_claim": 114,
+    "count": 62,
+    "currency": 56,
+    "amount": 54,
+    "date_or_time": 27,
+    "other": 14,
+    "direction": 11,
+    "account": 1
+  },
+  "by_disposition": {
+    "escalate": {
+      "case_files": 62,
+      "material_errors": {
+        "count": 42,
+        "of": 62,
+        "rate": 0.6774,
+        "ci95": [
+          0.5537,
+          0.7805
+        ]
+      }
+    },
+    "dismiss": {
+      "case_files": 195,
+      "material_errors": {
+        "count": 80,
+        "of": 195,
+        "rate": 0.4103,
+        "ci95": [
+          0.3436,
+          0.4804
+        ]
+      }
+    }
+  },
+  "judge_cost_usd": 1.5032,
+  "note": "Judged by the same model family as the agent, at temperature 0; see spot_check.json for a manual check of a sample."
+}
