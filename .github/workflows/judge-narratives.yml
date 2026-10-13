@@ -1,0 +1,42 @@
+name: Judge case-file narratives
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Agent run to judge (folder under results/ibm/agent_runs)
+        default: ibm-test-haiku
+      budget:
+        description: Stop before spending more than this many dollars
+        default: "1.5"
+permissions:
+  contents: write
+concurrency: judge-narratives
+jobs:
+  judge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Fetch prepared IBM data
+        run: |
+          git fetch --depth 1 origin ibm-cache
+          mkdir -p data/ibm_prepared
+          git --work-tree=data/ibm_prepared checkout FETCH_HEAD -- .
+          git reset -q
+      - name: Judge every case file against its evidence
+        run: python src/ibm_narrative_judge.py --run "${{ inputs.run_id }}" --budget "${{ inputs.budget }}"
+      - name: Save results to the repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f "results/ibm/agent_runs/${{ inputs.run_id }}/narrative_judge.jsonl" "results/ibm/agent_runs/${{ inputs.run_id }}/narrative_judge.json"
+          git commit -m "Judge case-file narratives for ${{ inputs.run_id }}"
+          git pull --rebase origin main
+          git push origin HEAD:main
