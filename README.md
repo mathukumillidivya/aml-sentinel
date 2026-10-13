@@ -238,7 +238,11 @@ first-time payment network, the agent's case file and audit trail, and decision
 buttons. A results view carries the measured figures and a workload calculator.
 Benchmark labels stay hidden until the viewer asks for them.
 
-`app/site/index.html` is the standalone build served at the demo address. A second
+`app/site/index.html` is the standalone build served at the demo address: an
+investigation console where the payment network around an alert is drawn as a
+map, the agent's recorded tool calls are replayed onto it, and its case file is
+written beside it. `python src/build_console.py` rebuilds it from the data
+packed into `app/review.html`, so the two pages always show the same numbers. A second
 build, `app/review.html`, adds a live agent that can be run on any case when the
 page is hosted on a platform that provides a model runtime.
 
