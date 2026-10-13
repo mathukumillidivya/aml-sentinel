@@ -6,7 +6,7 @@ Money-laundering alert triage, measured on the public IBM AML benchmark. Rules
 raise alerts, a scoring model ranks them, an LLM agent writes the case file, and
 a person decides.
 
-**Live demo:** https://aml-sentinel-app.netlify.app (a case desk that replays the agent's
+**Live demo:** https://aml-sentinel-app.onrender.com (a case desk that replays the agent's
 investigation of 300 held-out alerts on a payment map, plus the results)
 
 **Reproduce:** `python reproduce.py` re-scores every saved run and checks each published number (no API key). Full steps, the frozen commit and the data are in [REPRODUCE.md](REPRODUCE.md). A 40-second demo video is on the site's Reproduce page.

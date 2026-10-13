@@ -1,0 +1,20 @@
+# Render hosting for the investigation console (moved here from Netlify). The page is prebuilt and committed
+# (python src/build_console.py); Render only publishes the folder, and only when it changes.
+services:
+  - type: web
+    name: aml-sentinel-app
+    runtime: static
+    branch: main
+    buildCommand: echo "page is prebuilt by src/build_console.py"
+    staticPublishPath: ./app/site
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - app/site/**
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
