@@ -39,3 +39,15 @@ python src/ibm_faithfulness.py --run <run_id>
 
 The rules and model are deterministic. The agent is a model, so a fresh run lands close to, not exactly on,
 the published figures.
+
+## Checks added after the test
+
+These came after the frozen evaluation and do not change its numbers.
+
+```bash
+python src/ibm_currency_check.py --run ibm-test-haiku       # free: dollar figures written as another currency
+python src/ibm_narrative_judge.py --run ibm-test-haiku --budget 1.5   # second-model review; needs ANTHROPIC_API_KEY
+```
+
+Outputs are in `results/ibm/agent_runs/ibm-test-haiku/`: `currency_check.json`, `narrative_judge.json(l)`, and the
+hand review `narrative_spot_check.json`. In GitHub: Actions > judge-narratives.
