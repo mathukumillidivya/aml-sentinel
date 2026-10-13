@@ -1,0 +1,124 @@
+{
+  "judge_model": "claude-haiku-4-5-20251001",
+  "case_files_judged": 40,
+  "accurate": {
+    "count": 20,
+    "of": 40,
+    "rate": 0.5,
+    "ci95": [
+      0.352,
+      0.648
+    ]
+  },
+  "minor_errors": {
+    "count": 1,
+    "of": 40,
+    "rate": 0.025,
+    "ci95": [
+      0.0044,
+      0.1288
+    ]
+  },
+  "material_errors": {
+    "count": 19,
+    "of": 40,
+    "rate": 0.475,
+    "ci95": [
+      0.3294,
+      0.625
+    ]
+  },
+  "currency_ok": {
+    "count": 32,
+    "of": 40,
+    "rate": 0.8,
+    "ci95": [
+      0.6524,
+      0.895
+    ]
+  },
+  "innocent_explanation": {
+    "specific": {
+      "count": 24,
+      "of": 40,
+      "rate": 0.6,
+      "ci95": [
+        0.446,
+        0.7365
+      ]
+    },
+    "generic": {
+      "count": 12,
+      "of": 40,
+      "rate": 0.3,
+      "ci95": [
+        0.1807,
+        0.4543
+      ]
+    },
+    "implausible": {
+      "count": 0,
+      "of": 40,
+      "rate": 0.0,
+      "ci95": [
+        0,
+        0.0876
+      ]
+    },
+    "missing": {
+      "count": 4,
+      "of": 40,
+      "rate": 0.1,
+      "ci95": [
+        0.0396,
+        0.2305
+      ]
+    }
+  },
+  "supports_own_decision": {
+    "count": 28,
+    "of": 40,
+    "rate": 0.7,
+    "ci95": [
+      0.5457,
+      0.8193
+    ]
+  },
+  "error_types": {
+    "unsupported_claim": 16,
+    "other": 13,
+    "currency": 12,
+    "count": 8,
+    "amount": 6,
+    "date_or_time": 4,
+    "direction": 2
+  },
+  "by_disposition": {
+    "escalate": {
+      "case_files": 14,
+      "material_errors": {
+        "count": 14,
+        "of": 14,
+        "rate": 1.0,
+        "ci95": [
+          0.7847,
+          1
+        ]
+      }
+    },
+    "dismiss": {
+      "case_files": 26,
+      "material_errors": {
+        "count": 5,
+        "of": 26,
+        "rate": 0.1923,
+        "ci95": [
+          0.0851,
+          0.3788
+        ]
+      }
+    }
+  },
+  "judge_cost_usd": 0.2887,
+  "note": "Judged by the same model family as the agent, at temperature 0; see spot_check.json for a manual check of a sample."
+}

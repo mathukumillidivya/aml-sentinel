@@ -1,0 +1,60 @@
+        null
+      ]
+    },
+    "implausible": {
+      "count": 0,
+      "of": 0,
+      "rate": null,
+      "ci95": [
+        null,
+        null
+      ]
+    },
+    "missing": {
+      "count": 0,
+      "of": 0,
+      "rate": null,
+      "ci95": [
+        null,
+        null
+      ]
+    }
+  },
+  "supports_own_decision": {
+    "count": 0,
+    "of": 0,
+    "rate": null,
+    "ci95": [
+      null,
+      null
+    ]
+  },
+  "by_disposition": {
+    "escalate": {
+      "case_files": 0,
+      "material_errors": {
+        "count": 0,
+        "of": 0,
+        "rate": null,
+        "ci95": [
+          null,
+          null
+        ]
+      }
+    },
+    "dismiss": {
+      "case_files": 0,
+      "material_errors": {
+        "count": 0,
+        "of": 0,
+        "rate": null,
+        "ci95": [
+          null,
+          null
+        ]
+      }
+    }
+  },
+  "judge_cost_usd": 0,
+  "note": "Judged by the same model family as the agent, at temperature 0; see spot_check.json for a manual check of a sample."
+}
