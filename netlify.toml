@@ -1,0 +1,11 @@
+# Hosting for the demo page. The page is prebuilt and committed (python src/build_console.py),
+# so Netlify only publishes the folder.
+[build]
+  publish = "app/site"
+  command = "echo 'site is prebuilt'"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
