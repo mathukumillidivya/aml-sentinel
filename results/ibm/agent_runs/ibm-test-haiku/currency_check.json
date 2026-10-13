@@ -1,0 +1,51 @@
+{
+  "case_files": 298,
+  "case_files_with_non_usd_payments": 189,
+  "dollar_figure_written_as_foreign_currency": {
+    "count": 46,
+    "of_non_usd_case_files": 189,
+    "rate": 0.2434
+  },
+  "examples": [
+    {
+      "alert_id": "IB032049",
+      "text": "s to two first-time recipients (A195860 receiving \u20ac16,118 and A070618 receiving \u20ac7"
+    },
+    {
+      "alert_id": "IB036299",
+      "text": " A116002 received 72 first-time payments totaling \u20ac2.49M in rapid succession on 09"
+    },
+    {
+      "alert_id": "IB045149",
+      "text": "eived five Euro-denominated ACH payments totaling \u20ac9,421.43 from five different co"
+    },
+    {
+      "alert_id": "IB046088",
+      "text": "arties within 14 minutes on 2022-09-10, totaling $6,127.90 AUD. All three payments arrived i"
+    },
+    {
+      "alert_id": "IB031331",
+      "text": "Account A214033 received \u20ac18,437.66 from first-time count"
+    },
+    {
+      "alert_id": "IB043854",
+      "text": "t that received $16.4K USD from A254931 and paid $14.8K EUR to A213922 within a 2-day win"
+    },
+    {
+      "alert_id": "IB029572",
+      "text": "9-06 within 19 minutes, then on the same day paid \u20ac2,840 to account A385398. The d"
+    },
+    {
+      "alert_id": "IB031696",
+      "text": "ator of laundering activity. The account received \u20ac7,155 from A066246 on 09-06, th"
+    },
+    {
+      "alert_id": "IB027258",
+      "text": "ount A026998 made a single first-time payment of $19,419.91 CAD to A046615, which appears to "
+    },
+    {
+      "alert_id": "IB028121",
+      "text": "Account A066109 received \u20ac4,455 from first-time counterpa"
+    }
+  ]
+}

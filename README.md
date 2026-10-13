@@ -28,9 +28,12 @@ investigation of 300 held-out alerts on a payment map, plus the results)
   worse than the model (AUC 0.68 against 0.81; gap −0.13, 95% CI −0.19 to −0.07).
   Averaging the two was worse than the model alone. A stronger LLM and a
   retrieval step did not change this.
-- **The agent writes the case file, faithfully.** A mechanical check of every
-  account and dollar figure it wrote found 95% of case files fully traceable to
-  the evidence it retrieved, and 813 of 814 named accounts in that evidence.
+- **The agent's figures trace back; its prose is less reliable.** A mechanical
+  check found 95% of case files with every account and dollar figure traceable
+  to the evidence. But in 46 of the 189 case files with non-dollar payments, the
+  agent wrote a dollar-equivalent figure as if it were euros or another currency,
+  and a second-model review checked by hand puts case files with a material
+  error at roughly 30%, almost all of them currency mislabels.
 - **What it misses.** 23% of laundering transactions never reach an alerted
   account (37% on the second dataset), and the agent names the right scheme type
   for only 7 of 47.
@@ -200,6 +203,35 @@ All 15 untraced Haiku figures were read by hand: differences, rounded limits,
 and currency conversions, none an obviously invented amount. The check confirms
 a figure exists in the evidence, not that the sentence around it is correct.
 
+### Does the prose describe the evidence correctly?
+
+Traceable figures do not mean the sentence around them is right. Two more checks on the held-out case files:
+
+- **Code** ([src/ibm_currency_check.py](src/ibm_currency_check.py)): every amount the agent sees is a US-dollar
+  equivalent, with the payment's own currency in a separate field, and it has no exchange rates. So an amount
+  written as "€4,168.24" or "$19,419.91 CAD" is wrong by construction.
+- **A second model** ([src/ibm_narrative_judge.py](src/ibm_narrative_judge.py)): Claude Haiku 4.5 at temperature 0
+  read each write-up next to the evidence the agent saw and rated its accuracy, its handling of currencies, and
+  its innocent explanation. The budget ($1.50) covered 257 of the 298 case files.
+- **By hand** ([narrative_spot_check.json](results/ibm/agent_runs/ibm-test-haiku/narrative_spot_check.json)): 20 of
+  the second model's verdicts, 12 drawn from those it rated "material errors" and 8 from "accurate".
+
+| Held-out case files, Claude Haiku 4.5 agent | Result |
+|---|---|
+| Dollar figure written as a foreign-currency amount (code) | 46 of 189 with non-dollar payments (24%); Sonnet 5.5 run: 8 of 55 (15%) |
+| Second model: accurate / minor errors / material errors | 52% / 1% / 47% (257 files) |
+| Hand check of "material errors" | 6 of 12 confirmed, 2 real but minor, 4 false alarms |
+| Hand check of "accurate" | 7 of 8 confirmed, 1 missed currency error |
+| Estimated share with a material error, after the hand check | roughly 30% (rough: 20 files) |
+| Innocent explanation (second model) | specific 70%, generic 19%, implausible 7%, missing 5% |
+| Write-up supports its own recommendation (second model) | 81% |
+
+Every confirmed material error was a currency mislabel. The second model's false alarms had two causes: it was not
+shown the agent's investigation guidance, so it flagged the guidance's thresholds and batch-collection notes as
+unsupported, and it sometimes listed statements it then described as accurate. The fix for the agent is mechanical:
+give it each payment's amount in its own currency next to the dollar figure, or rewrite amounts in code. The console
+now shows both checks at the end of every held-out case's agent trail.
+
 ### What did not work
 
 - **Naming the scheme type.** Right for 7 of 47 escalated alerts in a labeled
@@ -278,6 +310,8 @@ python src/ibm_replicate.py --name LI-Small   # second dataset; needs data/ibm_p
 python src/ibm_agent.py --provider anthropic --split test --n-true 120 --n-false 180
 python src/ibm_agent_eval.py --run <run_id>
 python src/ibm_faithfulness.py --run <run_id>
+python src/ibm_currency_check.py --run <run_id>                    # free
+python src/ibm_narrative_judge.py --run <run_id> --budget 1.5     # needs ANTHROPIC_API_KEY
 ```
 
 Each stage also has a workflow under the Actions tab, which reads keys from

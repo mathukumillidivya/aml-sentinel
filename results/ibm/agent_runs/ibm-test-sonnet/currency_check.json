@@ -1,0 +1,43 @@
+{
+  "case_files": 100,
+  "case_files_with_non_usd_payments": 55,
+  "dollar_figure_written_as_foreign_currency": {
+    "count": 8,
+    "of_non_usd_case_files": 55,
+    "rate": 0.1455
+  },
+  "examples": [
+    {
+      "alert_id": "IB032049",
+      "text": "me parties within about 15 hours: A195860 (about $16,118, Euro) at 09-09 06:18, and A070618 "
+    },
+    {
+      "alert_id": "IB026944",
+      "text": "A217581 and A192923, and the source of the large $2.09M Yen cheque from established sende"
+    },
+    {
+      "alert_id": "IB044223",
+      "text": "ent and no cycle. The only upstream link is a USD 2.95 Euro payment into A105988, which i"
+    },
+    {
+      "alert_id": "IB031331",
+      "text": "hold Account both received a first-time payment ($18,437.66 EUR from A066178 on 09-07 16:48) "
+    },
+    {
+      "alert_id": "IB043854",
+      "text": "ment from A254931 on 09-08 and sent a first-time $14.9k EUR payment to A213922 on 09-10. "
+    },
+    {
+      "alert_id": "IB030603",
+      "text": "m A145924 on 09-06. About 40 hours later it sent $15.0k EUR to A011738. Both counterparti"
+    },
+    {
+      "alert_id": "IB029572",
+      "text": "398 paid onward to a further new party, A230630 ($1,282.11 Euro, 09-09), and itself received "
+    },
+    {
+      "alert_id": "IB036290",
+      "text": "A115505 received 11 Euro ACH payments from 11 differen"
+    }
+  ]
+}

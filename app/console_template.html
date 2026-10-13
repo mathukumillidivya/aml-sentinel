@@ -267,6 +267,7 @@ footer { padding: 28px 0 44px; color: var(--faint); font-size: 13px; border-top:
 .rp-video video { width: 100%; height: auto; border-radius: var(--rp-radius); background: #000; box-shadow: 0 20px 40px -24px rgba(0,0,0,.6); }
 .rp-foot a { color: inherit; }
 @media (max-width: 760px) { .rp-list div, .rp-video { grid-template-columns: minmax(0, 1fr); gap: 4px; } .rp-video { gap: 14px; } .rp-cmd pre { padding-top: 46px; } }
+.step .av.warn { color: var(--gold); border-color: var(--gold); } .perr { margin: 6px 0 0 16px; display: grid; gap: 4px; font-size: 13px; } .perr q { font-style: italic; } .hand { margin-top: 6px; font-size: 13px; opacity: .85 }
 </style>
 </head>
 <body>
@@ -582,6 +583,11 @@ async function play(c, my) {
   await stream($("#narr"), c.narr, Math.min(3200, c.narr.length * 7)); if (!ok()) return;
   $("#inn").hidden = false; $("#stamp").classList.add("on"); $(".g", w).textContent = `Recommended ${c.disp}. Every account it names is checked against the evidence it retrieved.`;
   say("code", "✓", "Check, in code", `${c.linked.length} linked account(s) named; all appear in the ledger evidence.`);
+  const pr = DATA.prose && DATA.prose.cases[c.id];
+  if (pr) {
+    say(pr.cur ? "code warn" : "code", pr.cur ? "!" : "✓", "Currency check, in code", pr.cur ? `Writes a dollar-equivalent figure as if it were another currency: “…${esc(pr.cur)}…”. Every amount in the evidence is in US dollars; the payment's own currency is shown in the ledger.` : "Amounts are written as dollar figures, with the payment currency named separately.");
+    if (pr.acc) say("", "2nd", "Write-up review by a second model", `${{ accurate: "No errors found", minor_errors: "Minor errors", material_errors: "Material errors flagged" }[pr.acc]}. Innocent explanation: ${esc(pr.inn)}.${pr.errs.length ? `<ul class="perr">${pr.errs.map(e => `<li><q>${esc(e.q)}</q> ${esc(e.why)}</li>`).join("")}${pr.more ? `<li>and ${pr.more} more in the review file</li>` : ""}</ul>` : ""}${pr.hand ? `<p class="hand"><b>Read by hand:</b> ${esc(pr.note)}</p>` : `<p class="hand">A screen, not a verdict: by hand, about half of its “material” flags held up (<a href="#/results">results</a>).</p>`}`);
+  }
   setNow(`Agent finished: <b>${c.disp === "escalate" ? "escalate" : "dismiss"}</b>, risk ${c.risk}. A person decides.`);
 }
 
@@ -617,11 +623,30 @@ function viewResults(v) {
       <div><span>Real alerts among them</span><b>${pct(F.li.rules.precision, 1)}</b></div>
       <div><span>Laundering on alerted accounts</span><b>${pct(F.li.rules.laundering_transaction_recall)}</b></div>
       <div><span>Laundering on alerted accounts, HI-Small</span><b>${pct(F.txn_recall)}</b></div></div></div></div>
+  ${proseHtml()}
   <div class="section"><h2>What these results do not show</h2><ul class="limits">
     <li>The data is synthetic. Real bank data has messier identities, more products and labels that arrive months late.</li>
     <li>${pct(1 - F.txn_recall)} of laundering transactions never reach an alerted account: the rules miss them, and nothing downstream can recover them.</li>
     <li>The agent names the right scheme type for only a small share of laundering cases; typology is a hint, not a finding.</li>
     <li>The agent's sample is ${F.sample} alerts from the review band, re-weighted to the true mix; its intervals are wider than the model's.</li></ul></div></div>`;
+}
+
+function proseHtml() {
+  const P = DATA.prose; if (!P) return "";
+  const J = P.judge, C = P.currency.dollar_figure_written_as_foreign_currency, S = P.spot, I = J.innocent_explanation;
+  return `<div class="section"><h2>Does the write-up describe the evidence correctly?</h2>
+    <p class="muted" style="max-width:860px">Tracing every figure to the ledger does not show that the sentence around it is right. Two further checks on the held-out case files: one in code, and one by a second model (Claude Haiku 4.5, the agent's own model, at temperature 0) that read each write-up next to the evidence the agent saw. Its verdicts were then checked by hand on 20 case files.</p>
+    <div class="cards3"><div><b>${C.count} of ${C.of_non_usd_case_files}</b><span>case files with non-dollar payments write a dollar-equivalent figure as if it were euros or another currency (code check)</span></div>
+      <div><b>≈30%</b><span>of case files have a material error after the hand check, almost all currency mislabels. The second model alone flagged ${pct(J.material_errors.rate)}.</span></div>
+      <div><b>${pct(I.specific.rate)}</b><span>give an innocent explanation specific to the account's activity; ${pct(I.generic.rate)} generic, ${pct(I.implausible.rate + I.missing.rate)} implausible or missing (second model)</span></div></div>
+    <div class="two" style="margin-top:18px"><div class="kv">
+      <div><span>Case files reviewed by the second model</span><b>${J.case_files_judged} of 298</b></div>
+      <div><span>Rated accurate / minor / material</span><b>${pct(J.accurate.rate)} / ${pct(J.minor_errors.rate)} / ${pct(J.material_errors.rate)}</b></div>
+      <div><span>Hand check: “material” flags that held</span><b>${S.rated_material_errors.material_confirmed} of ${S.rated_material_errors.checked}, ${S.rated_material_errors.real_but_minor} more minor</b></div>
+      <div><span>Hand check: “accurate” ratings that held</span><b>${S.rated_accurate.agree} of ${S.rated_accurate.checked}</b></div>
+      <div><span>Write-up supports its own recommendation</span><b>${pct(J.supports_own_decision.rate)}</b></div>
+      <div><span>Cost of the second-model review</span><b>$${J.judge_cost_usd.toFixed(2)}</b></div></div>
+      <div><p class="muted" style="font-size:14.5px">${esc(S.pattern)}</p><p class="muted" style="font-size:14.5px;margin-top:10px">The fix is mechanical: give the agent each payment's amount in its own currency next to the dollar figure, or rewrite amounts in code. Open any held-out case to see its checks at the end of the agent trail. Files: <a href="https://github.com/mathukumillidivya/aml-sentinel/blob/main/results/ibm/agent_runs/ibm-test-haiku/narrative_judge.json" target="_blank" rel="noopener">narrative_judge.json</a>, <a href="https://github.com/mathukumillidivya/aml-sentinel/blob/main/results/ibm/agent_runs/ibm-test-haiku/narrative_spot_check.json" target="_blank" rel="noopener">narrative_spot_check.json</a>, <a href="https://github.com/mathukumillidivya/aml-sentinel/blob/main/results/ibm/agent_runs/ibm-test-haiku/currency_check.json" target="_blank" rel="noopener">currency_check.json</a>.</p></div></div></div>`;
 }
 
 /* ------------------------------------------------ how it works */

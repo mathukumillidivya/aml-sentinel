@@ -1,0 +1,146 @@
+{
+  "what": "20 case files read by hand against their evidence: 12 drawn at random from those the judge rated material_errors and 8 from those it rated accurate (seed 7).",
+  "rated_material_errors": {
+    "checked": 12,
+    "material_confirmed": 6,
+    "real_but_minor": 2,
+    "false_alarm": 4
+  },
+  "rated_accurate": {
+    "checked": 8,
+    "agree": 7,
+    "missed_error": 1
+  },
+  "pattern": "Every confirmed material error was a currency mislabel. The false alarms came from two judge weaknesses: it was not shown the agent's investigation guidance, so it flagged the guidance's thresholds and batch-collection notes as unsupported; and it sometimes listed statements it then described as accurate.",
+  "estimate": "Weighting the sample back to the judged population (122 material, 133 accurate) gives roughly 30% of case files with a material error, mostly currency, rather than the judge's 47%. With 20 files this is a rough estimate.",
+  "cases": [
+    {
+      "alert_id": "IB027868",
+      "judge": "material_errors",
+      "hand": "material",
+      "note": "Real: USD-equivalent amounts written as euros (\u20ac4,168.24). Two of the judge's four listed errors are wrong: the write-up's count of four incoming payments is right, and A\u2192B\u2192A is a two-account cycle."
+    },
+    {
+      "alert_id": "IB027287",
+      "judge": "material_errors",
+      "hand": "false_alarm",
+      "note": "Both 'errors' are the write-up's labelled inference ('suggesting a legitimate collector'), which the evidence (no outbound payments in the window) does support."
+    },
+    {
+      "alert_id": "IB031123",
+      "judge": "material_errors",
+      "hand": "false_alarm",
+      "note": "Listed items are accurate (two card receipts and one ACH payment). The write-up does mislabel '84% of $111.3M' (84% is a share of payments by count), which the judge did not list."
+    },
+    {
+      "alert_id": "IB042788",
+      "judge": "material_errors",
+      "hand": "material",
+      "note": "Real: '\u20ac26.95M' and '\u20ac8.3k' are USD equivalents written as euros."
+    },
+    {
+      "alert_id": "IB028901",
+      "judge": "material_errors",
+      "hand": "minor",
+      "note": "Real but minor: 'received ... then paid ... that morning' muddles the order, and the key evidence says 18 payments where the narrative says 19."
+    },
+    {
+      "alert_id": "IB036299",
+      "judge": "material_errors",
+      "hand": "material",
+      "note": "Real: '\u20ac949k', '\u20ac1.36M', '\u20ac6.93M' are USD equivalents written as euros."
+    },
+    {
+      "alert_id": "IB045025",
+      "judge": "material_errors",
+      "hand": "minor",
+      "note": "Real but minor: '17% of outgoing payments' is 1 of 6 payments in both directions, and one of the receipts came from a second counterparty."
+    },
+    {
+      "alert_id": "IB035469",
+      "judge": "material_errors",
+      "hand": "material",
+      "note": "Real: '\u20ac6,616.66' is a USD equivalent. The 'invented threshold of 5' is from the agent's investigation guidance, which the judge was not shown."
+    },
+    {
+      "alert_id": "IB029250",
+      "judge": "material_errors",
+      "hand": "material",
+      "note": "Real: '\u20ac384,218.05' and '\u20ac1,337.18' are USD equivalents."
+    },
+    {
+      "alert_id": "IB044223",
+      "judge": "material_errors",
+      "hand": "false_alarm",
+      "note": "The judge's own notes say each listed item is accurate or acceptable rounding."
+    },
+    {
+      "alert_id": "IB045087",
+      "judge": "material_errors",
+      "hand": "material",
+      "note": "Real: '\u20ac16,217.21' and '\u20ac5,172.70' are USD equivalents."
+    },
+    {
+      "alert_id": "IB035613",
+      "judge": "material_errors",
+      "hand": "false_alarm",
+      "note": "'Within 24 minutes' is right; the batch-collection note comes from the agent's investigation guidance, which the judge was not shown."
+    },
+    {
+      "alert_id": "IB043854",
+      "judge": "accurate",
+      "hand": "agree",
+      "note": "'$14.8K EUR' is borderline but readable as a dollar figure for a euro payment."
+    },
+    {
+      "alert_id": "IB037841",
+      "judge": "accurate",
+      "hand": "agree",
+      "note": ""
+    },
+    {
+      "alert_id": "IB044269",
+      "judge": "accurate",
+      "hand": "agree",
+      "note": "Four currencies confirmed in the case file."
+    },
+    {
+      "alert_id": "IB029822",
+      "judge": "accurate",
+      "hand": "agree",
+      "note": ""
+    },
+    {
+      "alert_id": "IB028121",
+      "judge": "accurate",
+      "hand": "missed",
+      "note": "Missed a currency error: '\u20ac4,455' is a USD equivalent, and 'roughly equivalent after currency conversion' compares two dollar figures."
+    },
+    {
+      "alert_id": "IB045630",
+      "judge": "accurate",
+      "hand": "agree",
+      "note": ""
+    },
+    {
+      "alert_id": "IB029634",
+      "judge": "accurate",
+      "hand": "agree",
+      "note": ""
+    },
+    {
+      "alert_id": "IB046759",
+      "judge": "accurate",
+      "hand": "agree",
+      "note": ""
+    }
+  ],
+  "also_read": [
+    {
+      "alert_id": "IB044430",
+      "judge": "material_errors",
+      "hand": "minor",
+      "note": "The site's featured case, read in full. '~$11.3M in Euros' is correct (a dollar figure for euro payments); the judge's currency flag is wrong. One real, small error: A108962 also received $171.77 from another account, so 'received no other funds' is not quite right."
+    }
+  ]
+}
