@@ -202,17 +202,27 @@ def main():
                            system_prompt=system, first_message=msg, typologies=TYPOLOGIES,
                            escalate_at=ESCALATE_AT, verdict_check=check)
 
-    t0, verdicts, used, skipped = time.time(), [], 0, 0
+    t0, verdicts, used, skipped, api_errors = time.time(), [], 0, 0, 0
     with ThreadPoolExecutor(args.workers) as pool, open(out / "traces.jsonl", "w") as tf:
         for i in range(0, len(todo), args.workers):
             if used >= args.token_budget:
                 skipped = len(todo) - i
                 print(f"token budget reached; {skipped} alerts not run")
                 break
-            for v in pool.map(work, todo[i:i + args.workers]):
+            batch = list(pool.map(work, todo[i:i + args.workers]))
+            for v in batch:
                 verdicts.append(v.to_dict(with_trace=False))
                 tf.write(json.dumps(v.to_dict(), default=str) + "\n")
                 used += v.input_tokens + v.output_tokens
+            # stop when the API itself is failing (for example no credit left), instead of recording failsafes
+            if all(v.status == "failsafe" and v.failure_reason.startswith("model error") for v in batch):
+                api_errors += 1
+                if api_errors >= 2:
+                    skipped = len(todo) - i - len(batch)
+                    print(f"the model API failed on every alert in two batches in a row; stopping with {skipped} not run")
+                    break
+            else:
+                api_errors = 0
             if len(verdicts) % 20 < args.workers or len(verdicts) == len(todo):
                 print(f"{len(verdicts)}/{len(todo)} alerts, {used:,} tokens, {time.time() - t0:.0f}s", flush=True)
 
