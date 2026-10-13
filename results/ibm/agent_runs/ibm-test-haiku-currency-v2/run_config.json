@@ -1,0 +1,17 @@
+{
+  "run_id": "ibm-test-haiku-currency-v2",
+  "provider": "anthropic",
+  "model": "claude-haiku-4-5-20251001",
+  "split": "test",
+  "seed": 11,
+  "requested": 40,
+  "completed": 40,
+  "skipped_for_budget": 0,
+  "band_alerts": 9249,
+  "band_true_alerts": 1275,
+  "escalate_at": 15,
+  "retrieval": false,
+  "currency_v2": true,
+  "alert_ids": "results/ibm/currency_v2_alerts.txt",
+  "wall_seconds": 33.0
+}
