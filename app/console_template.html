@@ -389,7 +389,7 @@ function viewHome(v) {
     <div class="tag" id="tag"></div>
     <div class="wrap"><div class="copy">
       <h1>Follow<br><em>the money.</em></h1>
-      <p class="lede">Banks' rules raise ${F.per_day.toLocaleString()} money-laundering alerts a day and ${pct(1 - F.precision, 1)} of them are innocent. AML Sentinel ranks them, sends an AI agent to trace where the money went, and drafts the case file a human investigator signs.</p>
+      <p class="lede">In our synthetic benchmark (IBM AML, HI-Small), the rules raised ${F.per_day.toLocaleString()} money-laundering alerts a day and ${pct(1 - F.precision, 1)} of them were innocent. AML Sentinel ranks them, sends an AI agent to trace where the money went, and drafts the case file a human investigator signs.</p>
       <div class="acts"><a class="btn go" href="#/case/${fc.id}">Watch the agent trace a case</a><a class="btn" href="#/results">See the results</a><a class="btn" href="#/reproduce" onclick="setTimeout(() => document.getElementById('tour')?.scrollIntoView(), 50)">▶ 40-second tour</a></div>
     </div></div>
   </section>
