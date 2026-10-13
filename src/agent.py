@@ -186,9 +186,11 @@ ACCOUNT_RE = re.compile(r"\bA\d{5,7}\b")
 def investigate(client, ledger, alert_id: str, account: str, date: str, rules: str,
                 max_turns: int = MAX_TURNS, max_tool_calls: int = MAX_TOOL_CALLS,
                 tools=toolbox, system_prompt: str | None = None, first_message: str | None = None,
-                typologies: list = TYPOLOGIES, escalate_at: int = 50) -> Verdict:
+                typologies: list = TYPOLOGIES, escalate_at: int = 50, verdict_check=None) -> Verdict:
     """Investigate one alert. `tools`, `system_prompt`, `first_message` and `typologies` let another
-    dataset plug in its own evidence tools and case file while keeping every safety check here."""
+    dataset plug in its own evidence tools and case file while keeping every safety check here.
+    `verdict_check(verdict, trace, first_message)` returns problems with the write-up; a verdict with problems is
+    sent back once to be rewritten (a second submission is accepted and its remaining problems are recorded)."""
     v = Verdict(alert_id=alert_id, account=account)
     t0 = time.time()
     system_prompt = system_prompt or SYSTEM_PROMPT
@@ -197,6 +199,7 @@ def investigate(client, ledger, alert_id: str, account: str, date: str, rules: s
     messages = [{"role": "user", "content": [{"type": "text", "text": first_message}]}]
     seen_accounts = {account} | set(ACCOUNT_RE.findall(first_message))
     rejected_once = False
+    revised_once = False
 
     def failsafe(reason):
         v.status, v.failure_reason = "failsafe", reason
@@ -229,6 +232,17 @@ def investigate(client, ledger, alert_id: str, account: str, date: str, rules: s
         for c in calls:
             if c["name"] == "submit_verdict":
                 err = validate_verdict(c["input"], typologies, escalate_at)
+                if err is None and verdict_check is not None:
+                    problems = verdict_check(c["input"], v.trace, first_message)
+                    if problems and not revised_once:
+                        revised_once = True
+                        v.trace.append({"type": "revision_requested", "problems": problems})
+                        results.append({"type": "tool_result", "tool_use_id": c["id"], "content": json.dumps({"error":
+                            "verdict returned for one correction: " + "; ".join(problems) + ". Every usd value is in US "
+                            "dollars and amount is in the payment's own currency. Rewrite those amounts and resubmit."})})
+                        continue
+                    if problems:
+                        v.trace.append({"type": "problems_remaining", "problems": problems})
                 if err is None:
                     d = c["input"]
                     linked = [a for a in d.get("linked_accounts", []) if isinstance(a, str) and a != account]

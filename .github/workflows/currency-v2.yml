@@ -1,0 +1,48 @@
+name: Currency fix (write-up v2)
+# Re-run the agent with version 2 of the write-up step on 60 held-out alerts with non-dollar payments, then score
+# the original and revised case files the same way (code currency check, and judge v2 on both). The original run
+# and its scores are not touched.
+on:
+  workflow_dispatch:
+    inputs:
+      token_budget: {default: "1500000"}
+      judge_budget: {description: "US$ per run for judge v2", default: "0.45"}
+permissions:
+  contents: write
+concurrency: run-ibm-agent
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.13", cache: pip}
+      - run: pip install -r requirements.txt
+      - name: Fetch prepared IBM data
+        run: |
+          git fetch --depth 1 origin ibm-cache
+          mkdir -p data/ibm_prepared
+          git --work-tree=data/ibm_prepared checkout FETCH_HEAD -- .
+          git reset -q
+      - run: python -m pytest -q tests
+      - name: Investigate the same 60 alerts with write-up v2
+        run: python src/ibm_agent.py --provider anthropic --model claude-haiku-4-5-20251001 --split test --currency-v2 --alert-ids results/ibm/currency_v2_alerts.txt --token-budget "${{ inputs.token_budget }}" --run-id ibm-test-haiku-currency-v2
+      - name: Judge v2 on both runs, same alerts
+        run: |
+          python src/ibm_narrative_judge.py --run ibm-test-haiku-currency-v2 --judge-v2 --tag v2 --ids results/ibm/currency_v2_alerts.txt --budget "${{ inputs.judge_budget }}"
+          python src/ibm_narrative_judge.py --run ibm-test-haiku --judge-v2 --tag v2 --ids results/ibm/currency_v2_alerts.txt --budget "${{ inputs.judge_budget }}"
+      - name: Compare
+        if: always()
+        run: python src/ibm_currency_compare.py
+      - name: Save
+        if: always()
+        run: |
+          git config user.name "Divya Sri"
+          git config user.email "hellosweety789@gmail.com"
+          git add -f results/ibm/agent_runs/ibm-test-haiku-currency-v2 results/ibm/agent_runs/ibm-test-haiku/narrative_judge_v2.* results/ibm/currency_v2_comparison.json || true
+          git commit -m "Write-up v2 on 60 held-out alerts: run, judge and comparison" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main

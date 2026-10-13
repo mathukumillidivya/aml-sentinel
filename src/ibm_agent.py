@@ -161,18 +161,33 @@ def main():
     ap.add_argument("--token-budget", type=int, default=5_000_000)
     ap.add_argument("--run-id", default=None)
     ap.add_argument("--retrieval", action="store_true", help="show the agent similar past cases and their outcomes")
+    ap.add_argument("--currency-v2", action="store_true",
+                    help="version 2 write-up: payment amounts in their own currency, a writing rule and a code check (src/ibm_currency.py)")
+    ap.add_argument("--alert-ids", default="", help="file with one alert id per line: run these instead of a sample")
     args = ap.parse_args()
 
     client = IBMMockClient() if args.provider == "mock" else make_client(args.provider, args.model or None)
     L = T.IBMLedger.load()
     alerts = add_percentiles(pd.read_parquet("results/ibm/alert_scores.parquet"))
-    chosen = sample_alerts(alerts, args.split, args.n_true, args.n_false, args.seed)
+    if args.alert_ids:
+        ids = [x.strip() for x in Path(args.alert_ids).read_text().split() if x.strip()]
+        chosen = alerts[alerts.alert_id.isin(ids)].set_index("alert_id").loc[ids].reset_index()
+    else:
+        chosen = sample_alerts(alerts, args.split, args.n_true, args.n_false, args.seed)
+    check = None
+    if args.currency_v2:
+        import ibm_currency as C
+        T.NATIVE = True
+        def check(d, trace, first):  # noqa: E306
+            return C.check_amounts(C.writeup_text(d), C.evidence_payments(trace, first))
     library = None
     if args.retrieval:
         from ibm_cases import CaseLibrary
         feats = pd.read_parquet("results/ibm/alert_features.parquet").drop(columns="alert_id")
         library = CaseLibrary(alerts, feats)
     system = SYSTEM_PROMPT + (RETRIEVAL_NOTE if args.retrieval else "")
+    if args.currency_v2:
+        system += C.WRITING_RULE
     todo = [{"alert_id": r.alert_id, "account": T.acct_name(r.a), "date": T.date_of(r.day), "rules": r.rules,
              "percentile": float(r.percentile)} for r in chosen.itertuples()]      # labels dropped here
 
@@ -185,7 +200,7 @@ def main():
                         library.similar(a["alert_id"]) if library else None)
         return investigate(client, L, a["alert_id"], a["account"], a["date"], a["rules"], tools=T,
                            system_prompt=system, first_message=msg, typologies=TYPOLOGIES,
-                           escalate_at=ESCALATE_AT)
+                           escalate_at=ESCALATE_AT, verdict_check=check)
 
     t0, verdicts, used, skipped = time.time(), [], 0, 0
     with ThreadPoolExecutor(args.workers) as pool, open(out / "traces.jsonl", "w") as tf:
@@ -210,7 +225,8 @@ def main():
         "run_id": run_id, "provider": client.provider, "model": client.model, "split": args.split, "seed": args.seed,
         "requested": len(todo), "completed": len(verdicts), "skipped_for_budget": skipped,
         "band_alerts": len(pool_), "band_true_alerts": int(pool_.is_true_alert.sum()),
-        "escalate_at": ESCALATE_AT, "retrieval": bool(args.retrieval), "wall_seconds": round(time.time() - t0, 1)}, indent=2))
+        "escalate_at": ESCALATE_AT, "retrieval": bool(args.retrieval), "currency_v2": bool(args.currency_v2),
+        "alert_ids": args.alert_ids or None, "wall_seconds": round(time.time() - t0, 1)}, indent=2))
     print(f"run saved to {out}")
 
 

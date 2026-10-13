@@ -67,8 +67,8 @@ jobs:
         run: python src/ibm_agent_eval.py --run "$RUN_ID"
       - name: Save results to the repository
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "Divya Sri"
+          git config user.email "hellosweety789@gmail.com"
           git add -f "results/ibm/agent_runs/$RUN_ID"
           git commit -m "Add IBM agent run $RUN_ID"
           git pull --rebase origin main

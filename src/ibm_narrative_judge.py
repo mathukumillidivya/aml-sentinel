@@ -70,6 +70,19 @@ Say whether the write-up, as written, supports the analyst's own recommendation 
 
 Submit your review with the submit_review tool."""
 
+# Judge version 2 (used to compare the original and the revised write-ups on the same alerts): it also sees the
+# guidance the agent was given, so thresholds and calibration notes quoted from it are not flagged as unsupported,
+# and it knows that `amount`, where present, is the payment's value in its own currency.
+JUDGE_V2_NOTE = """
+
+The analyst was given the investigation guidance below. Statements that repeat this guidance (thresholds, rates from earlier cases, notes about batch collections) are supported; do not flag them.
+
+Where a payment shows `amount`, that is its value in the currency it was paid in, so "€3,557 (about $4,168)" is correct for a Euro payment with amount 3557 and usd 4168. A US-dollar figure written with "$" and the currency in words ("$4,168 paid in Euro") is also correct.
+
+<analyst_guidance>
+{guidance}
+</analyst_guidance>"""
+
 TOOL = {"name": "submit_review", "description": "Submit the review of one case file.",
         "input_schema": {"type": "object", "required": ["accuracy", "errors", "currency_ok", "innocent_explanation", "supports_decision", "note"],
                          "properties": {
@@ -95,6 +108,7 @@ def compact(o) -> str:
 class Judge:
     def __init__(self, provider: str):
         self.provider = provider
+        self.instructions = INSTRUCTIONS
         if provider == "anthropic":
             import anthropic
             self.client = anthropic.Anthropic(max_retries=5)
@@ -105,7 +119,7 @@ class Judge:
                      "supports_decision": True, "note": "mock"}, {"input": 0, "output": 0})
         r = self.client.messages.create(
             model=MODEL, max_tokens=1200,
-            system=[{"type": "text", "text": INSTRUCTIONS, "cache_control": {"type": "ephemeral"}}],
+            system=[{"type": "text", "text": self.instructions, "cache_control": {"type": "ephemeral"}}],
             tools=[TOOL], tool_choice={"type": "tool", "name": "submit_review"},
             messages=[{"role": "user", "content": f"<evidence>\n{evidence}\n</evidence>\n\n<write_up>\n{writeup}\n</write_up>"}],
             extra_body={"temperature": 0})
@@ -121,17 +135,27 @@ def main():
     ap.add_argument("--provider", default="anthropic", choices=["anthropic", "mock"])
     ap.add_argument("--budget", type=float, default=1.5, help="stop before spending more than this many dollars")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--ids", default="", help="file of alert ids: judge only these")
+    ap.add_argument("--judge-v2", action="store_true", help="judge with the agent's guidance and the amount field explained")
+    ap.add_argument("--tag", default="", help="write narrative_judge_<tag>.json(l) instead")
     args = ap.parse_args()
     run = Path(args.run) if Path(args.run).exists() else Path("results/ibm/agent_runs") / args.run
     L = T.IBMLedger.load()
     alerts = add_percentiles(pd.read_parquet("results/ibm/alert_scores.parquet")).set_index("alert_id")
     truth = alerts["is_true_alert"] if "is_true_alert" in alerts else None
+    cfg = json.loads((run / "run_config.json").read_text()) if (run / "run_config.json").exists() else {}
+    T.NATIVE = bool(cfg.get("currency_v2"))      # rebuild the case file exactly as the agent saw it
+    only = set(Path(args.ids).read_text().split()) if args.ids else None
     judge, spent, rows = Judge(args.provider), 0.0, []
-    out_path = run / "narrative_judge.jsonl"
+    if args.judge_v2:
+        from ibm_agent import SYSTEM_PROMPT
+        judge.instructions = INSTRUCTIONS + JUDGE_V2_NOTE.format(guidance=SYSTEM_PROMPT)
+    name = f"narrative_judge_{args.tag}" if args.tag else "narrative_judge"
+    out_path = run / f"{name}.jsonl"
     done = {json.loads(l)["alert_id"]: json.loads(l) for l in open(out_path)} if out_path.exists() else {}
     for line in open(run / "traces.jsonl"):
         v = json.loads(line)
-        if v["status"] != "ok":
+        if v["status"] != "ok" or (only is not None and v["alert_id"] not in only):
             continue
         if args.limit and len(rows) >= args.limit:
             break
@@ -177,7 +201,7 @@ def main():
                             for d in ("escalate", "dismiss")},
          "judge_cost_usd": round(sum(cost(r["usage"]) for r in rows), 4),
          "note": "Judged by the same model family as the agent, at temperature 0; see spot_check.json for a manual check of a sample."}
-    (run / "narrative_judge.json").write_text(json.dumps(m, indent=2))
+    (run / f"{name}.json").write_text(json.dumps(m, indent=2))
     print(json.dumps({k: v for k, v in m.items() if k != "error_types"}, indent=2))
 
 

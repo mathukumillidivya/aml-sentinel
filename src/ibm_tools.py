@@ -76,6 +76,18 @@ class IBMLedger:
         return max(0, d - D.WINDOW_BACK), min(self.last_day, d + D.WINDOW_FWD)
 
 
+# Version 2 of the write-up step (src/ibm_currency.py) also shows each payment's amount in the currency it was
+# paid in. Off by default so the frozen runs are reproduced exactly.
+NATIVE = False
+
+
+def _amt(usd, cur_code, L) -> dict:
+    if not NATIVE:
+        return {}
+    from ibm_currency import native
+    return {"amount": native(float(usd), L.currencies[cur_code])}
+
+
 def _r(x) -> float:
     return round(float(x), 2)
 
@@ -130,8 +142,8 @@ def list_first_time_payments(L: IBMLedger, account: str, as_of: str, limit: int 
         cpw = L.activity(r.cp, lo, hi)
         cpn = cpw[cpw.new]
         rows.append({"time": _when(r.minute), "direction": "paid" if r.out else "received from",
-                     "counterparty": acct_name(r.cp), "usd": _r(r.amount_usd), "currency": L.currencies[r.currency],
-                     "format": L.formats[r.format],
+                     "counterparty": acct_name(r.cp), "usd": _r(r.amount_usd), **_amt(r.amount_usd, r.currency, L),
+                     "currency": L.currencies[r.currency], "format": L.formats[r.format],
                      "counterparty_first_time_payments_made": int(cpn.out.sum()),
                      "counterparty_first_time_payments_received": int((~cpn.out).sum()),
                      "counterparty_total_payments_in_window": int(len(cpw))})
@@ -144,8 +156,8 @@ def get_transactions(L: IBMLedger, account: str, as_of: str, limit: int = 30) ->
     lo, hi = L.window(as_of)
     w = L.activity(code, lo, hi).sort_values("amount_usd", ascending=False)
     rows = [{"time": _when(r.minute), "direction": "paid" if r.out else "received from", "counterparty": acct_name(r.cp),
-             "usd": _r(r.amount_usd), "currency": L.currencies[r.currency], "format": L.formats[r.format],
-             "first_time": bool(r.new)} for r in w.head(limit).itertuples()]
+             "usd": _r(r.amount_usd), **_amt(r.amount_usd, r.currency, L), "currency": L.currencies[r.currency],
+             "format": L.formats[r.format], "first_time": bool(r.new)} for r in w.head(limit).itertuples()]
     return {"account": account, "payments_in_window": int(len(w)), "shown": len(rows), "payments": rows}
 
 
@@ -243,7 +255,7 @@ def trace_new_relationships(L: IBMLedger, account: str, as_of: str, hops: int = 
         "cycle_back_to_this_account": [acct_name(c) for c in t["cycle"]],
         "currencies_along_the_way": sorted({L.currencies[e[4]] for e in edges}),
         "payments": [{"time": _when(e[2]), "from": acct_name(e[0]), "to": acct_name(e[1]), "usd": _r(e[3]),
-                      "currency": L.currencies[e[4]], "format": L.formats[e[5]]} for e in edges[:40]],
+                      **_amt(e[3], e[4], L), "currency": L.currencies[e[4]], "format": L.formats[e[5]]} for e in edges[:40]],
         "linked_accounts": sorted(acct_name(c) for c in t["accounts"]),
         "truncated": t["truncated"] or len(edges) > 40,
     }
