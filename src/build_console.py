@@ -48,6 +48,9 @@ def main():
     # USD value of one unit of each currency, the same rates used to convert amounts in ibm_prepare.py,
     # so the page can show each payment in the currency it was made in.
     data["rates"] = json.loads(Path("results/ibm/usd_rates_HI-Small.json").read_text())["usd_per_unit"]
+    cmp_ = Path("results/ibm/currency_v2_comparison.json")
+    if cmp_.exists():
+        data["currency_v2"] = {k: {kk: vv for kk, vv in v.items() if kk != "examples"} for k, v in json.loads(cmp_.read_text())["runs"].items()}
     data["prose"] = prose("results/ibm/agent_runs/ibm-test-haiku", {c["id"] for c in data["cases"]})
     page = Path("app/console_template.html").read_text()
     out = page.replace("/*DATA*/null", json.dumps(data, separators=(",", ":")).replace("</", "<\\/"))

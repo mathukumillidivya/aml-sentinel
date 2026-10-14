@@ -232,6 +232,31 @@ unsupported, and it sometimes listed statements it then described as accurate. T
 give it each payment's amount in its own currency next to the dollar figure, or rewrite amounts in code. The console
 now shows both checks at the end of every held-out case's agent trail.
 
+### Write-up version 2: the currency fix
+
+Added after the check above and evaluated separately on 40 held-out alerts with non-dollar payments (drawn at random);
+the original run and its scores are unchanged.
+
+- **What changed** ([src/ibm_currency.py](src/ibm_currency.py)): every payment the tools return carries `amount`, its
+  value in the currency it was paid in, next to the dollar equivalent; the prompt says how to write amounts; and a code
+  check compares every amount written with a currency label against the payments the agent saw, sending a mislabelled
+  verdict back once.
+- **How it was scored:** the same code check on both runs, and the second model re-run on both with the agent's
+  guidance and the `amount` field explained (so it no longer flags the guidance's thresholds as unsupported).
+
+| Same 40 held-out alerts | Original | Version 2 |
+|---|---|---|
+| Dollar figure written as another currency (code) | 13 of 40 | **0 of 39** |
+| Second model: material errors | 19 of 40 | 14 of 39 |
+| Second model: currency errors | 8 of 40 | 4 of 39, all false alarms on reading* |
+| Escalate/dismiss matches the label | 31 of 40 | 33 of 39 |
+| Sent back once by the code check | | 1 |
+
+\* "$2.78 million in Swiss Francs" and "€7,071.89 ($8,287)" are the correct forms; the second model flagged them
+anyway. One alert ended in the fail-safe (escalated to a person) after two inconsistent verdicts. The remaining
+material errors the second model reports are unsupported claims and miscounted payments, not currencies. Cost: $0.85
+for the agent, $0.56 for the two judge runs ([currency_v2_comparison.json](results/ibm/currency_v2_comparison.json)).
+
 ### What did not work
 
 - **Naming the scheme type.** Right for 7 of 47 escalated alerts in a labeled

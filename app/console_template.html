@@ -631,6 +631,16 @@ function viewResults(v) {
     <li>The agent's sample is ${F.sample} alerts from the review band, re-weighted to the true mix; its intervals are wider than the model's.</li></ul></div></div>`;
 }
 
+function cv2Html() {
+  const V = DATA.currency_v2; if (!V || !V.revised) return "";
+  const o = V.original, r = V.revised, f = x => `${x.count} of ${x.of}`;
+  const rows = [["Dollar figure written as another currency (code check)", f(o.currency_mislabels_code), f(r.currency_mislabels_code)],
+    ["Second model: material errors", f(o.judge_v2.material_errors), f(r.judge_v2.material_errors)],
+    ["Escalate/dismiss matches the label", f(o.decision_right), f(r.decision_right)]];
+  return `<h3 style="margin:26px 0 8px">Version 2: the currency fix, on 40 held-out alerts with non-dollar payments</h3>
+    <p class="muted" style="max-width:860px;font-size:14.5px">Each payment now carries its amount in the currency it was paid in, the prompt says how to write amounts, and a code check sends a mislabelled amount back once. Same alerts, scored the same way; the second model was re-run on both with the agent's guidance in view. Its 4 remaining currency flags on version 2 are correct forms such as “€7,071.89 ($8,287)”. The original run above is unchanged.</p>
+    <div class="kv" style="max-width:760px">${rows.map(([t, a, b]) => `<div><span>${t}</span><b>${a} → ${b}</b></div>`).join("")}</div>`;
+}
 function proseHtml() {
   const P = DATA.prose; if (!P) return "";
   const J = P.judge, C = P.currency.dollar_figure_written_as_foreign_currency, S = P.spot, I = J.innocent_explanation;
@@ -646,7 +656,8 @@ function proseHtml() {
       <div><span>Hand check: “accurate” ratings that held</span><b>${S.rated_accurate.agree} of ${S.rated_accurate.checked}</b></div>
       <div><span>Write-up supports its own recommendation</span><b>${pct(J.supports_own_decision.rate)}</b></div>
       <div><span>Cost of the second-model review</span><b>$${J.judge_cost_usd.toFixed(2)}</b></div></div>
-      <div><p class="muted" style="font-size:14.5px">${esc(S.pattern)}</p><p class="muted" style="font-size:14.5px;margin-top:10px">The fix is mechanical: give the agent each payment's amount in its own currency next to the dollar figure, or rewrite amounts in code. Open any held-out case to see its checks at the end of the agent trail. Files: <a href="https://github.com/mathukumillidivya/aml-sentinel/blob/main/results/ibm/agent_runs/ibm-test-haiku/narrative_judge.json" target="_blank" rel="noopener">narrative_judge.json</a>, <a href="https://github.com/mathukumillidivya/aml-sentinel/blob/main/results/ibm/agent_runs/ibm-test-haiku/narrative_spot_check.json" target="_blank" rel="noopener">narrative_spot_check.json</a>, <a href="https://github.com/mathukumillidivya/aml-sentinel/blob/main/results/ibm/agent_runs/ibm-test-haiku/currency_check.json" target="_blank" rel="noopener">currency_check.json</a>.</p></div></div></div>`;
+      <div><p class="muted" style="font-size:14.5px">${esc(S.pattern)}</p><p class="muted" style="font-size:14.5px;margin-top:10px">The fix is mechanical: give the agent each payment's amount in its own currency next to the dollar figure, or rewrite amounts in code. Open any held-out case to see its checks at the end of the agent trail. Files: <a href="https://github.com/mathukumillidivya/aml-sentinel/blob/main/results/ibm/agent_runs/ibm-test-haiku/narrative_judge.json" target="_blank" rel="noopener">narrative_judge.json</a>, <a href="https://github.com/mathukumillidivya/aml-sentinel/blob/main/results/ibm/agent_runs/ibm-test-haiku/narrative_spot_check.json" target="_blank" rel="noopener">narrative_spot_check.json</a>, <a href="https://github.com/mathukumillidivya/aml-sentinel/blob/main/results/ibm/agent_runs/ibm-test-haiku/currency_check.json" target="_blank" rel="noopener">currency_check.json</a>.</p></div></div>
+    ${cv2Html()}</div>`;
 }
 
 /* ------------------------------------------------ how it works */
